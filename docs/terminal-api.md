@@ -2,6 +2,8 @@
 
 Shared contract between the backend (Claude) and the frontend (Codex). Base path `/api`, JSON, cookie session as today (`credentials: 'include'`). Amounts are **decimal strings** in HYPE (18 decimals) unless named `*Usd`. Times are Unix milliseconds. Addresses are lowercase hex.
 
+Liquidity is the WHYPE side of the pool counted twice, a common convention. Holder counts are exact only for tokens created inside the indexed range.
+
 Until the indexer is connected to an Elysium RPC, every endpoint serves the simulated feed with `source: "simulated"`. The sample shapes live in `fixtures/launches.sample.json`.
 
 ## Stages (Elysium definitions)
@@ -53,12 +55,13 @@ type Launch = {
 - `GET /api/stream` (Server-Sent Events): `launch` (new Launch), `update` (partial Launch with `address`), `alert` (AlertEvent)
 
 ### Trade
-- `POST /api/trade/quote` body `{ token, side: 'buy'|'sell', amount, slippageBps }` (amount in HYPE for buys, tokens for sells)
-  → `{ source, amountOut, minOut, priceImpactBps, route: string, tx: { to, data, value, chainId } | null, reason: string | null }`
-  `tx` is null in simulated mode or when the swap router is not configured; `reason` says why.
+- `POST /api/trade/quote` body `{ token, side: 'buy'|'sell', amount, slippageBps, wallet? }` (amount in HYPE for buys, tokens for sells; `wallet` defaults to the session's)
+  → `{ source, amountOut, minOut, priceImpactBps: number | null, route: string, tx: { to, data, value, chainId } | null, approveTx: { to, data, value, chainId } | null, reason: string | null }`
+  `tx` is null in simulated mode, without a wallet, or when swaps are not configured; `reason` says why. For a sell, send `approveTx` first when it is present. Buys use a 2-minute deadline.
 - Paper desk (simulated only): `POST /api/paper/fill` `{ token, side, amount, slippageBps }` → `{ fill }`; `GET /api/paper/positions` → `{ positions }`
 
 ### Alerts (session required)
+The stream sends each `alert` event only to the session that owns the rule.
 - `GET /api/alerts` → `{ rules: AlertRule[], events: AlertEvent[] }`
 - `POST /api/alerts` `{ kind: 'launch'|'stage'|'wallet', pad?, minVolumeHype?, maxAgeMin?, minHolders?, token?, wallet? }` → `{ rule }`
 - `DELETE /api/alerts/:id`
@@ -66,8 +69,9 @@ type Launch = {
 
 ### Launch with a fee router
 - `POST /api/router/plan` `{ creator, label, buckets: [{ kind: 'wallets'|'native'|'buyback-burn', bps, wallets?: { address, bps, editable }[] }] }`
-  → `{ predictedAddress, salt, config, deployTx: { to, data, value, chainId } | null, steps: string[], reason: string | null }`
-- `GET /api/router/:address` → `{ source, creator, subject, bound, buckets, owed: { asset, amount }[], keeper: { action, call }[] }`
+  → `{ predictedAddress: string | null, salt: string | null, config: object | null, buckets: { label, bps }[], deployTx: { to, data, value, chainId, from } | null, steps: string[], reason: string | null }`
+  Invalid plans return `400 { error }` with a readable message. Without a deployed router factory, `predictedAddress` and `deployTx` are null and `reason` explains. A buyback-and-burn bucket also needs the shared price guard.
+- `GET /api/router/:address`: **not built yet** (`TODO(api)`). Until it exists, show the router's buckets from `launch.router` and link to the explorer.
 - Protocol fee is fixed at 1% in the contract.
 
 ### Existing (Agents section, unchanged)

@@ -2,10 +2,13 @@ import express from 'express';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createApp } from './app.mjs';
+import { loadElysiumConfig } from '../chain/elysium.mjs';
 
 const mode=process.env.ERRAND_MODE||'demo';
 if(process.env.NODE_ENV==='production'&&mode==='demo'&&process.env.ALLOW_DEMO_PRODUCTION!=='1')throw new Error('Production disables simulated payments. Set ERRAND_MODE=chain, or explicitly ALLOW_DEMO_PRODUCTION=1 for a labeled demo deployment.');
-const app=createApp({dbPath:process.env.DB_PATH||'data/errand.sqlite',mode});
+const elysium=loadElysiumConfig();
+const app=createApp({dbPath:process.env.DB_PATH||'data/errand.sqlite',mode,elysium,terminalStart:true,log:m=>console.log(`[terminal] ${m}`)});
+console.log(`Terminal feed: ${elysium.live?`live Elysium indexer (chain ${elysium.chainId})`:'simulated (set ELYSIUM_RPC_URL, ELYSIUM_CHAIN_ID, ELYSIUM_WHYPE and ELYSIUM_UNISWAP_V3_FACTORY for live data)'}`);
 const dist=resolve('dist');
 if(existsSync(dist)){app.use(express.static(dist));app.get('/{*path}',(req,res)=>res.sendFile(resolve(dist,'index.html')));}
 const host=process.env.HOST||'127.0.0.1',port=Number(process.env.PORT||4317);

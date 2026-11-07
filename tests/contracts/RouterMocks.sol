@@ -146,6 +146,11 @@ contract MockV3Factory {
 
     function setPool(address a, address b, uint24 fee, address pool) external {
         pools[keccak256(abi.encode(a, b, fee))] = pool;
+        pools[keccak256(abi.encode(b, a, fee))] = pool;
+    }
+
+    function feeAmountTickSpacing(uint24 fee) external pure returns (int24) {
+        return fee == 10_000 ? int24(200) : fee == 3000 ? int24(60) : int24(0);
     }
 
     function getPool(address a, address b, uint24 fee) external view returns (address) {

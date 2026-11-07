@@ -204,3 +204,27 @@ test('Misthra V3 TWAP price guard bounds output and refuses manipulated spot pri
   await (await pool.setTicks(2000, 0)).wait(); // spot ~22% away from the TWAP
   await reverts(guard.minimumOutput, S, W, S, E('1'), routeHash, '0x', 'ExcessivePriceDeviation');
 });
+
+test('Misthra shared V3 TWAP guard resolves the canonical pool for any launch', async (t) => {
+  const { artifacts } = compileRouter({ evmVersion: 'shanghai', extraSources: { 'tests/contracts/RouterMocks.sol': readFileSync(new URL('RouterMocks.sol', import.meta.url), 'utf8') } });
+  const rpc = ganache.provider({ logging: { quiet: true }, chain: { chainId: 31337, hardfork: 'shanghai' }, wallet: { totalAccounts: 2 } });
+  t.after(() => rpc.disconnect());
+  const provider = new BrowserProvider(rpc, undefined, { cacheTimeout: -1 }); provider.pollingInterval = 10;
+  const deployer = await provider.getSigner(0);
+  const deploy = async (name, ...args) => { const k = await new ContractFactory(artifacts[name].abi, artifacts[name].bytecode, deployer).deploy(...args); await k.waitForDeployment(); return k; };
+  const whype = await deploy('MockWHYPE'), subject = await deploy('MockToken', 'Launch', 'LNCH'), other = await deploy('MockToken', 'Later', 'LATE');
+  const W = await whype.getAddress(), S = await subject.getAddress(), L = await other.getAddress();
+  const v3Factory = await deploy('MockV3Factory');
+  const guard = await deploy('MisthraSharedV3TwapPriceGuard', await v3Factory.getAddress(), 10000, 600, 500, 300, 300, E('1'));
+  // A launch that has no pool yet is refused rather than priced.
+  await reverts(guard.minimumOutput, S, W, S, E('1'), keccak256('0x00'), '0x', 'PoolNotFound');
+  for (const token of [S, L]) {
+    const pool = await deploy('MockV3Pool', await v3Factory.getAddress(), token, W, 10000);
+    await (await v3Factory.setPool(token, W, 10000, await pool.getAddress())).wait();
+    await (await guard.prime(token, W, 2)).wait();
+    await (await pool.setTicks(0, 0)).wait();
+  }
+  const [minOut] = await guard.minimumOutput(L, W, L, E('2'), keccak256('0x00'), '0x');
+  assert.equal(minOut, E('1.94'), 'one guard serves a launch created after it was deployed');
+  await reverts(guard.minimumOutput, S, W, L, E('1'), keccak256('0x00'), '0x', 'InvalidRoute');
+});

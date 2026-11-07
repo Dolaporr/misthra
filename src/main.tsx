@@ -1,0 +1,15 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { MotionConfig } from 'framer-motion';
+import '@fontsource-variable/inter';
+import '@fontsource-variable/manrope';
+import '@fontsource/barlow-condensed/500.css';
+import '@fontsource/barlow-condensed/600.css';
+import '@fontsource/barlow-condensed/700.css';
+import App from './App';
+import { AppProvider } from './state';
+import './styles.css';
+import './home.css';
+import './board.css';
+import './glass.css';
+createRoot(document.getElementById('root')!).render(<React.StrictMode><MotionConfig reducedMotion="user" transition={{duration:.28,ease:[.16,1,.3,1]}}><AppProvider><App/></AppProvider></MotionConfig></React.StrictMode>);

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "name": "Misthra Dark Chrome",
+  "platform": "web",
+  "reference": "DESIGN.md",
+  "tokens": {
+    "colors": {
+      "paper": "#0c0f16",
+      "ink": "#eef1f7",
+      "surface": "#151a24",
+      "surfaceSubtle": "#171e2b",
+      "surfaceTint": "#1b2841",
+      "muted": "#a3afc5",
+      "border": "#293246",
+      "inputBorder": "#3b455a",
+      "accent": "#7fa8ff",
+      "action": "#315bd5",
+      "actionHover": "#3c69e3",
+      "actionText": "#ffffff",
+      "success": "#76d4a6",
+      "error": "#ff96a6"
+    },
+    "typography": {
+      "display": "Manrope Variable",
+      "body": "Inter Variable",
+      "displayMaxPx": 88
+    },
+    "radius": {
+      "panelPx": 12,
+      "controlPx": 7
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "type": "format-compression derivative",
+  "origin": "/Users/mac/Documents/Codex/2026-11-02/e/errand-elysium/public/media/mission-category-portrait.png",
+  "origin_sha256": "2af9ed9482894baccf32714b7fe6fb5de835613e7d60bfc2116416088611d6ff",
+  "original_generated_origin": "/Users/mac/.codex/generated_images/01a1b7a2-932d-7ff0-a72a-dfeaf8370d4e/exec-d5ab55cd-567a-45d7-b643-12cde3a55667.png",
+  "generator": "built-in image_gen",
+  "prompt": "Use case: stylized-concept\nAsset type: portrait artwork for a premium AI mission marketplace category card, portrait 3:4\nPrimary request: a sculptural close-up editorial art photograph of a chrome and ceramic android head and shoulder.\nSubject: one striking androgynous android with smooth dark ceramic facial planes, mirror-polished silver temple and jaw structures, intricate precision joints at the neck, no hair.\nComposition/framing: tightly cropped head and one shoulder in a strong diagonal three-quarter profile. The android tilts slightly toward the upper left with elegant asymmetry. Portrait orientation; dynamic angled composition, enough of the silhouette visible to recognize a head.\nLighting/mood: severe but beautiful studio chiaroscuro, white light reflected along metal edges, a restrained cobalt-blue reflection on the shadow side. Editorial art photography, physically convincing refined materials.\nColor palette: deep black, cool silver, discreet blue reflections.\nScene/backdrop: a plain deep charcoal studio background with very subtle tonal falloff.\nConstraints: original art; no human people; no text, no logo, no lettering, no UI, no frame, no watermark.",
+  "conversion": {
+    "format": "WebP",
+    "quality": 90,
+    "method": 6,
+    "exact": true,
+    "cropping": false,
+    "repainting": false
+  },
+  "dimensions": [
+    1086,
+    1448
+  ],
+  "mode": "RGB",
+  "bytes": 137408
+}

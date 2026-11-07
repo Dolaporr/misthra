@@ -1,0 +1,169 @@
+/* Smoked mirror: a silver reflection over a dark, readable interior. */
+:root {
+  --mirror-ground: rgba(17, 24, 36, .88);
+  --mirror-reflection: linear-gradient(128deg, rgba(226, 237, 255, .13), rgba(226, 237, 255, .025) 29%, transparent 48%, rgba(127, 168, 255, .055) 76%, rgba(226, 237, 255, .085));
+  --mirror-edge: rgba(194, 212, 243, .22);
+  --mirror-inset: inset 0 1px 0 rgba(237, 245, 255, .14), inset 0 -1px 0 rgba(127, 168, 255, .04);
+}
+
+/* The material is shared. Only outer surfaces blur; nested controls stay crisp. */
+.header,
+.is-home .header,
+.mobile-nav,
+.is-home .mobile-nav,
+.modal,
+.mission-card,
+.agent-card,
+.post-form,
+.reward-panel,
+.profile-stats,
+.available-balance,
+.inbox-layout,
+.discipline-choice,
+.connection-scene,
+.landing-story .landing-work {
+  background: var(--mirror-reflection), var(--mirror-ground);
+  border: 1px solid var(--mirror-edge);
+  border-top-color: rgba(225, 237, 255, .36);
+  border-bottom-color: rgba(153, 179, 222, .11);
+  box-shadow: var(--mirror-inset);
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .header, .is-home .header, .mobile-nav, .is-home .mobile-nav, .modal {
+    background-color: rgba(14, 20, 31, .76);
+    -webkit-backdrop-filter: blur(20px) saturate(125%);
+    backdrop-filter: blur(20px) saturate(125%);
+  }
+  .landing-story .landing-work {
+    background: var(--mirror-reflection), rgba(13, 20, 32, .66);
+    -webkit-backdrop-filter: blur(10px) saturate(115%);
+    backdrop-filter: blur(10px) saturate(115%);
+  }
+  .connection-scene {
+    background: var(--mirror-reflection), rgba(19, 28, 45, .84);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+}
+
+.header { border-radius: 0 0 16px 16px; }
+.is-home .header {
+  top: 40px;
+  left: 2.5vw;
+  right: 2.5vw;
+  height: 78px;
+  padding: 0 2vw;
+  border-radius: 16px;
+}
+.landing-story .landing-work {
+  padding-right: 3vw;
+  border-radius: 0 20px 20px 0;
+  border-left: 0;
+}
+.is-home footer {
+  background: linear-gradient(170deg, rgba(218, 232, 255, .055), transparent 45%), #101722;
+  border-top: 1px solid var(--mirror-edge);
+}
+.film-control-floating button, .film-hint {
+  background: var(--mirror-reflection), rgba(13, 20, 32, .92);
+  border-color: var(--mirror-edge);
+  box-shadow: var(--mirror-inset);
+}
+
+.mission-card, .agent-card, .discipline-choice {
+  transition: border-color .2s ease, background-color .2s ease;
+}
+.mission-motion-tile .mission-card:hover,
+.mission-card:hover, .agent-card:hover,
+.discipline-choice:hover, .discipline-choice:focus-visible {
+  background: var(--mirror-reflection), #1b2a42;
+  border-color: rgba(164, 195, 249, .6);
+}
+.discipline-choice.selected {
+  background: var(--mirror-reflection), #203c70;
+  border-color: #8db3ff;
+}
+.board-hero {
+  border: 1px solid rgba(196, 216, 250, .25);
+  border-top-color: rgba(231, 242, 255, .4);
+  border-radius: 16px;
+}
+.discipline-portrait { border: 1px solid var(--mirror-edge); }
+.mission-card-meta, .agent-card-foot {
+  border-top-color: rgba(190, 210, 242, .14);
+  background-color: rgba(7, 13, 23, .14);
+}
+.reward-panel, .profile-stats, .available-balance {
+  background: var(--mirror-reflection), #1b2b46;
+}
+.thread-list { background: rgba(9, 16, 28, .45); }
+.modal { background: var(--mirror-reflection), rgba(16, 23, 36, .96); }
+.mobile-menu-overlay { background: rgba(3, 7, 14, .65); }
+
+/* Blue enamel actions, silver secondary actions, opaque input wells. */
+.button.primary, .landing-primary {
+  background: linear-gradient(180deg, rgba(220, 235, 255, .17), transparent 58%), #315bd5;
+  box-shadow: inset 0 1px 0 rgba(231, 241, 255, .32);
+  color: #fff;
+}
+.button.primary:hover, .landing-primary:hover {
+  background: linear-gradient(180deg, rgba(220, 235, 255, .2), transparent 58%), #3c69e3;
+}
+.button.secondary, .wallet-button,
+.category-tabs button, .segmented, .view-toggle {
+  background: linear-gradient(145deg, rgba(230, 240, 255, .07), transparent 65%), #151d2b;
+  border-color: rgba(191, 211, 243, .25);
+  box-shadow: inset 0 1px 0 rgba(233, 242, 255, .07);
+}
+.is-home .wallet-button {
+  background: linear-gradient(145deg, rgba(230, 240, 255, .08), transparent 65%), rgba(12, 19, 31, .6);
+  padding: 10px 14px;
+  border: 1px solid var(--mirror-edge);
+  border-radius: 9px;
+}
+.category-tabs button.active {
+  background: linear-gradient(145deg, rgba(223, 237, 255, .12), transparent 65%), #1b315d;
+  border-color: #7fa8ff;
+}
+.search-input, .select-wrap,
+input:not([type=checkbox]):not([type=radio]), textarea {
+  background-color: #111a29;
+  border-color: #53637e;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, .12);
+}
+.search-input input:not([type=checkbox]):not([type=radio]) {
+  background: transparent;
+  box-shadow: none;
+}
+select { background-color: #111a29; }
+select option { background: #111a29; color: #eef1f7; }
+
+@media (max-width: 1000px) {
+  .is-home .header { height: 68px; }
+}
+@media (max-width: 760px) {
+  .is-home .header { top: 38px; left: 4%; right: 4%; padding: 0 4%; gap: 12px; }
+  .is-home .wordmark .brand-name { font-size: 24px; }
+  .is-home .header .wallet-button { font-size: 11px; padding: 9px; }
+  .landing-story .landing-work { padding-right: 6%; border-radius: 0; border-right: 0; }
+  .connection-scene { border-left: 0; border-right: 0; }
+  .visual-board > .connection-scene { border: 1px solid var(--mirror-edge); }
+  .header, .is-home .header, .mobile-nav, .is-home .mobile-nav {
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+}
+@media (max-width: 380px) {
+  .is-home .header .wallet-button { width: 44px; font-size: 0; padding: 10px; }
+  .is-home .header .wallet-button > span { display: none; }
+  .is-home .header .wallet-button > svg:first-child { display: block; width: 18px; height: 18px; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .header, .is-home .header, .mobile-nav, .is-home .mobile-nav, .modal,
+  .landing-story .landing-work, .connection-scene {
+    background: #131d2d;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

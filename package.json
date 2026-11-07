@@ -1,0 +1,43 @@
+{
+  "name": "errand-elysium",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "server": "node --env-file-if-exists=.env server/index.mjs",
+    "build": "tsc --noEmit && vite build",
+    "start": "NODE_ENV=production node --env-file-if-exists=.env server/index.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:contracts": "node --test tests/contracts/*.test.mjs",
+    "contracts:compile": "node scripts/compile-contracts.mjs",
+    "mcp": "node mcp/index.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource-variable/manrope": "^5.2.8",
+    "@fontsource/barlow-condensed": "^5.3.0",
+    "@modelcontextprotocol/sdk": "^1.17.0",
+    "ethers": "6.17.0",
+    "express": "^5.1.0",
+    "framer-motion": "^14.10.1",
+    "lucide-react": "^0.468.0",
+    "multer": "^2.0.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@openzeppelin/contracts": "5.0.2",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "ganache": "7.9.2",
+    "solc": "0.8.30",
+    "typescript": "^5.8.3",
+    "vite": "^6.1.0"
+  }
+}

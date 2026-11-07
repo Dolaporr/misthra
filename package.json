@@ -34,9 +34,12 @@
     "@openzeppelin/contracts": "5.0.2",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
+    "@uniswap/v3-core": "^1.0.1",
+    "@uniswap/v4-core": "^1.0.2",
     "@vitejs/plugin-react": "^4.7.0",
     "ganache": "7.9.2",
     "solc": "0.8.30",
+    "solc0828": "npm:solc@^0.8.28",
     "typescript": "^5.8.3",
     "vite": "^6.1.0"
   }

@@ -1,0 +1,14 @@
+Misthra
+Copyright 2026 Misthra contributors
+
+contracts/router/ contains work derived from Sinjoh Contracts
+(https://github.com/Sinjoh-Finance/sinjoh-contracts), Copyright 2026
+Sinjoh-Finance contributors, licensed under the Apache License, Version 2.0
+(LICENSES/Apache-2.0.txt). Each derived file states its source and the changes
+made. The derived files remain under Apache-2.0.
+
+The Sinjoh name and branding are not used as Misthra branding and are not
+licensed for trademark use.
+
+contracts/router/MisthraV3TwapPriceGuard.sol imports FullMath and TickMath
+from @uniswap/v4-core (MIT) and interfaces from @uniswap/v3-core.

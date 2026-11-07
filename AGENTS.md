@@ -31,20 +31,22 @@ One app, one wallet session, one dark chrome design system, one launches table. 
 
 ## Ownership (to avoid conflicting edits)
 
-| Area | Owner | Others may |
-|---|---|---|
-| `contracts/`, `chain/`, `indexer/`, `server/`, `mcp/`, `scripts/compile-contracts.mjs`, `tests/` (non-UI) | Claude | read; propose changes in the PR description |
-| `src/` (React UI), `public/`, `src/*.css` | Codex | read |
+Codex did not start, so Claude built the first frontend too (2026-11-08). Whoever picks up a task below should claim it in the PR title and stay inside its files.
+
+| Area | Current owner |
+|---|---|
+| `contracts/`, `chain/`, `indexer/`, `server/`, `mcp/`, `scripts/compile-contracts.mjs`, `tests/` | Claude |
+| `src/` terminal pages (`src/pages/{Terminal,Coin,Launch,Alerts}.tsx`, `src/terminal/`, `src/terminal.css`) | open: take a task from `docs/briefs/codex-frontend.md` → "Next frontend tasks" |
 | `docs/terminal-api.md`, `fixtures/` | shared contract: change only by agreement, note it in the PR |
 | `AGENTS.md`, `NOTICE`, `LICENSES/` | either, carefully |
 
-If you need an API field that does not exist, use the fixture shape, mark it `TODO(api)` and say so in your PR. Do not add server routes from the frontend branch.
+If you need an API field that does not exist, mark it `TODO(api)` and say so in your PR. Do not add server routes from a frontend branch.
 
 ## Branches
 
 - `main`: last reviewed state (the original agent exchange).
 - `terminal-router`: Claude's integration branch (router contracts, indexer, API).
-- `codex/terminal-ui`: Codex's frontend branch, cut from `terminal-router`. Open a PR into `terminal-router`.
+- Feature branches are cut from `terminal-router` (e.g. `codex/<task>`), with a PR back into `terminal-router`.
 - Small commits, clear messages. Never force-push a shared branch. Never commit `.env`, keys or `data/`.
 
 ## Licences

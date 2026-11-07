@@ -24,8 +24,11 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
   r.get('/launches', json((req) => {
     const stage = STAGES.includes(req.query.stage) ? req.query.stage : undefined;
     const limit = Number(req.query.limit) || 60;
-    const pads = config.pads.map((p) => ({ id: p.id, name: p.name, url: p.url }));
-    return { source: source(), indexedBlock: Number(store.meta('idx.indexedBlock') ?? 0), updatedAt: now(), pads, launches: store.list(config, { stage, pad: req.query.pad || undefined, q: req.query.q || undefined, sort: req.query.sort, limit }) };
+    const launches = store.list(config, { stage, pad: req.query.pad || undefined, q: req.query.q || undefined, sort: req.query.sort, limit });
+    // Configured pads in live mode; in the simulated preview, the sample pads present in the feed.
+    const pads = config.pads.length ? config.pads.map((p) => ({ id: p.id, name: p.name, url: p.url }))
+      : [...new Map(store.list(config, { limit: 200 }).filter((l) => l.pad).map((l) => [l.pad.id, l.pad])).values()];
+    return { source: source(), indexedBlock: Number(store.meta('idx.indexedBlock') ?? 0), updatedAt: now(), pads, launches };
   }));
   r.get('/launches/:address', json((req) => ({ source: source(), launch: store.toApi(launchOr404(req.params.address), config) })));
   r.get('/launches/:address/candles', json((req) => { launchOr404(req.params.address); return { source: source(), bars: store.candles(req.params.address, req.query.tf) }; }));

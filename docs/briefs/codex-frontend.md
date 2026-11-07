@@ -1,5 +1,7 @@
 # Brief for Codex: Misthra three-in-one frontend
 
+> **Status 2026-11-08:** the first version of everything in "Your scope" below is built on `terminal-router` (Pulse, coin sheet, Launch wizard, Alerts, three-in-one nav and Home hub), checked in a browser at desktop and phone widths. Use the scope as the description of what exists. New work is under **Next frontend tasks** at the end.
+
 Date: 2026-11-08. Branch: cut `codex/terminal-ui` from `terminal-router`, PR back into `terminal-router`.
 Read `AGENTS.md` first (product, honesty rules, file ownership), then `docs/terminal-api.md` (the API you build against) and `DESIGN.md` (visual system, which stays).
 
@@ -49,3 +51,12 @@ Rules from `POST /api/alerts` (new launch matching a pad, volume, age or holders
 
 ## Done when
 Pulse, the coin sheet, the Launch wizard and Alerts render from the fixture or API at desktop and phone widths; Agents still works; the build passes; and the PR describes what you checked.
+
+## Next frontend tasks (open)
+
+1. **Live updates over SSE.** Replace Pulse polling with `/api/stream` (`launch`, `update` events), with polling as the fallback.
+2. **Per-column filters.** Today one filter set applies to all three columns; Axiom-style P1/P2/P3 presets per column.
+3. **Router status page** `#/launch/:router`, once the backend adds `GET /api/router/:address` (`TODO(api)`).
+4. **Paper desk view.** `GET /api/paper/positions` exists; show positions and PnL on the coin sheet and a small desk page.
+5. **Chart polish.** Crosshair with OHLC readout, price axis labels, and keyboard access to timeframes.
+6. **Accessibility pass.** Screen-reader review of Pulse cards and the trade panel; focus order in the Launch wizard.

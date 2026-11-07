@@ -34,6 +34,7 @@ test('the launch feed follows the contract and says it is simulated', async (t) 
     assert.ok(['new', 'stretch', 'migrated'].includes(launch.stage));
     assert.match(launch.priceHype, /^\d+(\.\d+)?$/);
   }
+  assert.deepEqual(body.pads.map((p) => p.id).sort(), ['ascend', 'bunnypad', 'citadel', 'montra'], 'the simulated feed lists its sample pads for the filter');
   const stages = new Set(body.launches.map((l) => l.stage));
   assert.deepEqual([...stages].sort(), ['migrated', 'new', 'stretch']);
   const migrated = (await f.req('/api/launches?stage=migrated')).body.launches;

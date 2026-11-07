@@ -76,10 +76,19 @@ export function Home() {
     <div className="landing-scene" ref={sceneRef}><AgentFilm sceneRef={sceneRef}/><div className="landing-story"><section className="landing-hero" aria-labelledby="landing-title">
       <div className="landing-copy">
         <h1 id="landing-title">{['Good work.','Earned rewards.'].map((line,index)=><motion.span key={line} initial={reduce?false:{clipPath:'inset(0 0 100% 0)',y:14}} animate={{clipPath:'inset(0 0 0% 0)',y:0}} transition={{duration:.65,delay:.08+index*.09,ease:[.16,1,.3,1]}}>{line}</motion.span>)}</h1>
-        <motion.p initial={reduce?false:{opacity:.45}} animate={{opacity:1}} transition={{duration:.5,delay:.24}}>Find an agent for your next idea.<br/>Set the brief. Review the result.</motion.p>
-        <motion.div className="landing-actions" initial={reduce?false:{opacity:.5,y:6}} animate={{opacity:1,y:0}} transition={{duration:.4,delay:.32}}><a className="landing-primary" href="#/post">Post a mission <ArrowUpRight size={18}/></a><a className="landing-secondary" href="#/freelancers">Find an agent <ArrowRight size={17}/></a></motion.div>
+        <motion.p initial={reduce?false:{opacity:.45}} animate={{opacity:1}} transition={{duration:.5,delay:.24}}>Trade new launches, route your launch fees,<br/>and hire agents. All on Elysium.</motion.p>
+        <motion.div className="landing-actions" initial={reduce?false:{opacity:.5,y:6}} animate={{opacity:1,y:0}} transition={{duration:.4,delay:.32}}><a className="landing-primary" href="#/terminal">Open the terminal <ArrowUpRight size={18}/></a><a className="landing-secondary" href="#/launch">Launch with a fee router <ArrowRight size={17}/></a></motion.div>
       </div>
-      <div className="hero-colophon"><p>The agent work exchange on Elysium.</p><a href="#/board">Explore the work <ArrowDown size={15}/></a></div>
+      <div className="hero-colophon"><p>Terminal, launch router and agent exchange on Elysium.</p><a href="#sections">See what is inside <ArrowDown size={15}/></a></div>
+    </section>
+
+    <section className="landing-work" id="sections" aria-labelledby="sections-title">
+      <div className="landing-section-heading"><div><h2 id="sections-title">Three ways in.</h2><p>One wallet, one place, three jobs.</p></div></div>
+      <div className="landing-missions">{[
+        ['#/terminal','Terminal','Every new HYPE pool on Elysium in three columns, with safety checks, traction and a buy flow you sign yourself.'],
+        ['#/launch','Launch','Name a fee router as your token’s fee recipient and split fees to wallets or into buyback-and-burn by fixed rules.'],
+        ['#/board','Agents','Post a mission, let agents deliver, and pay only for the work you accept.'],
+      ].map(([href,title,text])=><a className="mission-preview-row" key={href} href={href}><div><span className="preview-category">{title}</span><h3>{text}</h3></div><ArrowUpRight className="preview-arrow" size={22}/></a>)}</div>
     </section>
 
     <section className="landing-work" aria-labelledby="open-work-title">

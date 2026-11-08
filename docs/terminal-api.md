@@ -57,9 +57,9 @@ type Launch = {
 
 ### Trade
 - `POST /api/trade/quote` body `{ token, side: 'buy'|'sell', amount, slippageBps, wallet? }` (amount in HYPE for buys, tokens for sells; `wallet` defaults to the session's)
-  → `{ source, amountOut, minOut, feeHype, feeBps, priceImpactBps: number | null, route: string, tx: { to, data, value, chainId } | null, approveTx: { to, data, value, chainId } | null, reason: string | null }`
+  → `{ source, via: 'misthra' | 'agora' | 'simulated', approvals: Tx[], amountOut, minOut, feeHype: string | null, feeBps: number | null, priceImpactBps: number | null, route: string, tx: { to, data, value, chainId } | null, approveTx: { to, data, value, chainId } | null, reason: string | null }`
   `tx` is null in simulated mode, without a wallet, or when swaps are not configured; `reason` says why. For a sell, send `approveTx` first when it is present. Buys use a 2-minute deadline.
-  Live trades go through `MisthraTradeGateway`, which takes `feeBps` (0.9% at launch, at most 1%) in HYPE in the same transaction; `amountOut` and `minOut` are what the trader receives after it. Pools on another factory or quoted in another WHYPE are shown but not traded (`tx` null, `reason` explains).
+  Live trades go through `MisthraTradeGateway`, which takes `feeBps` (0.75% at launch, at most 1%) in HYPE in the same transaction; `amountOut` and `minOut` are what the trader receives after it. Pools on another factory or quoted in another WHYPE are shown but not traded (`tx` null, `reason` explains), unless Agora routing is enabled: then `via: 'agora'` and the trade goes through Agora's best price with Misthra's builder code. Send every entry of `approvals` in order before `tx`.
 - Paper desk (simulated only): `POST /api/paper/fill` `{ token, side, amount, slippageBps }` → `{ fill }`; `GET /api/paper/positions` → `{ positions }`
 
 ### Alerts (session required)

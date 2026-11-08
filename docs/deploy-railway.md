@@ -41,8 +41,14 @@ Copy the printed `MISTHRA_TRADE_GATEWAY`, `MISTHRA_TRADE_FEE_BPS`, `MISTHRA_ROUT
 
 The key never goes to Railway. Use a fresh deployer wallet with only enough HYPE for gas, and a multisig (e.g. a Safe) as `MISTHRA_FEE_RECIPIENT`.
 
+## 4. Optional: Agora route for every other pad
+
+1. Sign in at agoradex.app/dashboard with the treasury wallet, claim a builder code and create an API key.
+2. Check the amount fields in `chain/agora.mjs` (`pick` lists) against `https://api.agoradex.app/api/v1/openapi.json`.
+3. Set `AGORA_API_KEY`, `AGORA_BUILDER_CODE`, `AGORA_ALLOWED_TARGETS` (Agora's router and swap executor, from their docs) and `AGORA_ENABLED=1`.
+
 ## Notes
 
-- Fees: trades pay 0.9% (set at gateway deployment, capped at 1% in the contract). Fee routers pay 1% of creator fees. Both go to `MISTHRA_FEE_RECIPIENT`.
+- Fees: trades pay 0.75%, the same as Agora on Elysium (set at gateway deployment, capped at 1% in the contract). Fee routers pay 1% of creator fees. Both go to `MISTHRA_FEE_RECIPIENT`.
 - The contracts are unaudited. Start with small amounts.
 - `ALLOW_DEMO_PRODUCTION=1` is set in the Dockerfile because the Agents section still uses labelled simulated balances.

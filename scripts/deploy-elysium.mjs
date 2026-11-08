@@ -9,7 +9,7 @@
 //   ELYSIUM_WHYPE, ELYSIUM_UNISWAP_V3_FACTORY,
 //   ELYSIUM_UNISWAP_V3_SWAP_ROUTER              Uniswap on Elysium (first entry of a list is used)
 //   MISTHRA_FEE_RECIPIENT                       treasury (use a multisig)
-//   MISTHRA_TRADE_FEE_BPS (default 90)          trade fee, at most 100
+//   MISTHRA_TRADE_FEE_BPS (default 75)          trade fee, at most 100
 //   MISTHRA_ROUTER_POOL_FEE (default 10000)     fee tier the shared price guard prices
 //
 // Deploys: MisthraTradeGateway, MisthraFeeRouter implementation, MisthraFeeRouterFactory,
@@ -52,7 +52,7 @@ async function main() {
   const settings = {
     whype: getAddress(first(need('ELYSIUM_WHYPE'))), v3Factory: getAddress(first(need('ELYSIUM_UNISWAP_V3_FACTORY'))),
     swapRouter: getAddress(first(need('ELYSIUM_UNISWAP_V3_SWAP_ROUTER'))), feeRecipient: getAddress(need('MISTHRA_FEE_RECIPIENT')),
-    tradeFeeBps: Number(env.MISTHRA_TRADE_FEE_BPS ?? 90), poolFee: Number(env.MISTHRA_ROUTER_POOL_FEE ?? 10000),
+    tradeFeeBps: Number(env.MISTHRA_TRADE_FEE_BPS ?? 75), poolFee: Number(env.MISTHRA_ROUTER_POOL_FEE ?? 10000),
   };
   if (!(settings.tradeFeeBps >= 0 && settings.tradeFeeBps <= 100)) throw new Error('MISTHRA_TRADE_FEE_BPS must be between 0 and 100');
   const provider = new JsonRpcProvider(need('ELYSIUM_RPC_URL'));

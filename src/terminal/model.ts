@@ -25,7 +25,7 @@ export type Bar = { t: number; o: string; h: string; l: string; c: string; v: st
 export type Trade = { tx: string; t: number; side: 'buy' | 'sell'; trader: string; amountHype: string; amountToken: string };
 export type Holder = { address: string; pct: number; tags: string[] };
 export type Tx = { to: string; data: string; value: string; chainId: number | null; from?: string };
-export type Quote = { source: Source; amountOut: string; minOut: string; feeHype: string; feeBps: number; priceImpactBps: number | null; route: string; tx: Tx | null; approveTx: Tx | null; reason: string | null };
+export type Quote = { source: Source; via?: 'misthra' | 'agora' | 'simulated'; approvals?: Tx[]; amountOut: string; minOut: string; feeHype: string | null; feeBps: number | null; priceImpactBps: number | null; route: string; tx: Tx | null; approveTx: Tx | null; reason: string | null };
 export type AlertRule = { id: string; kind: 'launch' | 'stage' | 'wallet'; pad?: string; minVolumeHype?: number; maxAgeMin?: number; minHolders?: number; token?: string; wallet?: string; createdAt: number };
 export type AlertEvent = { id: string; ruleId: string; at: number; title: string; detail: string; token: string | null };
 

@@ -4,6 +4,8 @@ import { isAddress } from 'ethers';
 import { z } from 'zod';
 import { liveQuote, simulatedQuote } from '../../chain/trade.mjs';
 import { planRouter } from '../../chain/router-plan.mjs';
+import { AgoraError, createAgoraClient } from '../../chain/agora.mjs';
+import { Interface, formatUnits } from 'ethers';
 
 const STAGES = ['new', 'stretch', 'migrated'];
 
@@ -38,22 +40,40 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
   const quoteSchema = z.object({ token: z.string().refine(isAddress), side: z.enum(['buy', 'sell']), amount: z.string().regex(/^\d+(\.\d{1,18})?$/), slippageBps: z.number().int().min(1).max(5000), wallet: z.string().refine(isAddress).optional() });
   const parse = (schema, body) => { const p = schema.safeParse(body); if (!p.success) fail(400, p.error.issues[0]?.message ?? 'Invalid request'); return p.data; };
 
+  const agoraOn = Boolean(config.agora?.enabled && config.agora.allowedTargets.length && config.live);
+  const agora = agoraOn ? createAgoraClient(config.agora) : null;
+  const decimalsAbi = new Interface(['function decimals() view returns (uint8)']);
+  const noRoute = (reason) => ({ source: 'live', via: 'agora', amountOut: '0', minOut: '0', feeHype: null, feeBps: null, priceImpactBps: null, route: 'Agora best price', tx: null, approveTx: null, approvals: [], reason });
+
   r.post('/trade/quote', express.json(), json(async (req) => {
     const body = parse(quoteSchema, req.body);
-    const raw = launchOr404(body.token);
-    // Only pools on the canonical factory, quoted in the canonical WHYPE, can be
-    // traded through the gateway; others are shown but traded on their own pad.
-    const tradable = !raw.pool.factory || (raw.pool.factory === config.v3Factory && (!raw.pool.quote || raw.pool.quote === config.whype));
+    const raw = store.getRaw(body.token);
+    if (!raw && !agoraOn) fail(404, 'This launch is not indexed.');
+    // Route 1: Misthra's own gateway, for pools on the canonical factory quoted in
+    // the canonical WHYPE. Earns the Misthra trade fee.
+    const tradable = Boolean(raw) && (!raw.pool.factory || (raw.pool.factory === config.v3Factory && (!raw.pool.quote || raw.pool.quote === config.whype)));
     if (config.tradeReady && provider && tradable) {
       const quote = await liveQuote(provider, config, { ...body, wallet: body.wallet ?? who(req), fee: raw.pool.fee, decimals: raw.decimals, now: now() });
-      return { source: 'live', ...quote };
+      return { source: 'live', via: 'misthra', approvals: quote.approveTx ? [quote.approveTx] : [], ...quote };
+    }
+    // Route 2: Agora's best price across pads, with Misthra's builder code.
+    if (agoraOn) {
+      const wallet = body.wallet ?? who(req);
+      if (!wallet) return noRoute('Connect a wallet to get a quote from Agora.');
+      const decimals = raw?.decimals ?? Number(decimalsAbi.decodeFunctionResult('decimals', await provider.call({ to: body.token, data: decimalsAbi.encodeFunctionData('decimals') }))[0]);
+      try {
+        return { source: 'live', ...(await agora.quote({ ...body, recipient: wallet }, { chainId: config.chainId, formatOut: (w) => formatUnits(w, body.side === 'buy' ? decimals : 18), formatHype: (w) => formatUnits(w, 18) })) };
+      } catch (e) {
+        if (!(e instanceof AgoraError)) throw e;
+        return noRoute(e.message);
+      }
     }
     const launch = store.toApi(raw, config);
     const reason = !config.live ? undefined
       : !tradable ? 'This pool is on another DEX deployment. Trade it on its launchpad; Misthra shows it for research only.'
       : 'Trading is not switched on yet: the Misthra trade gateway or quoter address is not configured.';
     const quote = simulatedQuote({ ...body, priceHype: launch.priceHype, liquidityHype: launch.liquidityHype, feeBps: config.tradeFeeBps });
-    return { source: 'simulated', ...quote, reason: reason ?? quote.reason };
+    return { source: 'simulated', via: 'simulated', approvals: [], ...quote, reason: reason ?? quote.reason };
   }));
 
   // Paper fills exist only against the simulated feed; real trades are signed by the user.

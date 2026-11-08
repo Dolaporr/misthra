@@ -64,7 +64,7 @@ export async function liveQuote(provider, config, { token, side, amount, slippag
 
 // Simulated quote from the simulated feed. Applies the same platform fee the
 // gateway would, so the preview shows what a trader would really pay.
-export function simulatedQuote({ side, amount, slippageBps, priceHype, liquidityHype, feeBps = 90 }) {
+export function simulatedQuote({ side, amount, slippageBps, priceHype, liquidityHype, feeBps = 75 }) {
   const size = Number(amount), price = Number(priceHype), liq = Math.max(1, Number(liquidityHype));
   const fmt = (x) => x.toPrecision(8).replace(/\.?0+$/, '');
   const empty = { amountOut: '0', minOut: '0', feeHype: '0', feeBps, priceImpactBps: null, route: 'Simulated pool', tx: null, approveTx: null };

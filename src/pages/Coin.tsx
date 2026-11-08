@@ -122,7 +122,8 @@ function TradePanel({ launch, autoFocus }: { launch: Launch; autoFocus: boolean 
     if (!quote?.tx) return;
     setBusy(true); setError(null);
     try {
-      if (quote.approveTx) { await sendWithWallet(quote.approveTx); notify('Approval sent. Confirm the swap next.'); }
+      const approvals = quote.approvals?.length ? quote.approvals : quote.approveTx ? [quote.approveTx] : [];
+      for (const approval of approvals) { await sendWithWallet(approval); notify('Approval sent. Confirm the next step in your wallet.'); }
       const hash = await sendWithWallet(quote.tx);
       notify(`Transaction sent: ${hash.slice(0, 10)}…`); setQuote(null);
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
@@ -142,8 +143,8 @@ function TradePanel({ launch, autoFocus }: { launch: Launch; autoFocus: boolean 
     <label className="field-label inline" htmlFor="trade-slippage">Slippage %<input id="trade-slippage" inputMode="decimal" value={slippage} onChange={(e) => setSlippage(e.target.value.trim())} /></label>
     <button className="button primary full" disabled={!valid || busy} onClick={getQuote}>{busy && !quote ? 'Quoting…' : 'Get quote'}</button>
     {quote && <div className="quote" aria-live="polite">
-      <dl><div><dt>You receive</dt><dd>{hype(quote.amountOut)} {side === 'buy' ? launch.symbol : 'HYPE'}</dd></div><div><dt>At least</dt><dd>{hype(quote.minOut)}</dd></div><div><dt>Misthra fee ({(quote.feeBps / 100).toFixed(2).replace(/0$/, '')}%)</dt><dd>{hype(quote.feeHype)} HYPE</dd></div><div><dt>Price impact</dt><dd>{quote.priceImpactBps == null ? '–' : `${(quote.priceImpactBps / 100).toFixed(2)}%`}</dd></div><div><dt>Route</dt><dd>{quote.route}</dd></div></dl>
-      {quote.tx ? <button className="button primary full" disabled={busy} onClick={execute}>{quote.approveTx ? 'Approve, then swap in wallet' : 'Confirm in wallet'}</button>
+      <dl><div><dt>You receive</dt><dd>{hype(quote.amountOut)} {side === 'buy' ? launch.symbol : 'HYPE'}</dd></div><div><dt>At least</dt><dd>{hype(quote.minOut)}</dd></div><div><dt>{quote.via === 'agora' ? 'Agora fee' : `Misthra fee${quote.feeBps != null ? ` (${(quote.feeBps / 100).toFixed(2).replace(/0$/, '')}%)` : ''}`}</dt><dd>{quote.feeHype == null ? 'Included in the quote' : `${hype(quote.feeHype)} HYPE`}</dd></div><div><dt>Price impact</dt><dd>{quote.priceImpactBps == null ? '–' : `${(quote.priceImpactBps / 100).toFixed(2)}%`}</dd></div><div><dt>Route</dt><dd>{quote.route}</dd></div></dl>
+      {quote.tx ? <button className="button primary full" disabled={busy} onClick={execute}>{(quote.approvals?.length || quote.approveTx) ? 'Approve, then swap in wallet' : 'Confirm in wallet'}</button>
         : <><p className="muted small">{quote.reason}</p>{quote.source === 'simulated' && <button className="button secondary full" disabled={busy} onClick={paper}>{identity.address ? 'Paper fill (simulated)' : 'Sign in for a paper fill'}</button>}</>}
     </div>}
     {error && <p className="error-text" role="alert">{error}</p>}

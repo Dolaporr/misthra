@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, ChevronDown, Copy, Flame, Plus, Trash2, Wallet as WalletIcon, Coins } from 'lucide-react';
+import { RouterLookup } from './RouterStatus';
 import { post } from '../api';
 import { useApp } from '../state';
 import { sendWithWallet, type Tx } from '../terminal/model';
@@ -128,5 +129,6 @@ export function Launch() {
       <dl className="router-summary-context"><div><dt>Creator</dt><dd>{creatorValid?creator.slice(0,6)+'…'+creator.slice(-4):'Add a creator wallet'}</dd></div><div><dt>Launchpad</dt><dd>{selectedNames.join(', ')||'Not selected'}</dd></div><div><dt>Deployment</dt><dd>{deployed?'Submitted · confirmation pending':plan?.deployTx?'Plan ready for your wallet':'Not deployed'}</dd></div></dl>
       <p className="router-fixed-rules"><Check size={15} aria-hidden="true"/>Your split is fixed on deployment. Only payout addresses explicitly marked editable can change later.</p>
     </div></aside></div>
+    <RouterLookup/>
   </div>;
 }

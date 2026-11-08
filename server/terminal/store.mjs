@@ -97,7 +97,7 @@ export function createTerminalStore(db, { now = () => Date.now() } = {}) {
     holders(raw) {
       const rows = q.balances.all(raw.address);
       if (!rows.length) return { count: raw.simHolders ?? 0, top10Pct: raw.simTop10Pct ?? null, list: [] };
-      const excluded = new Set([raw.pool?.address, raw.router?.address, ...BURN].filter(Boolean));
+      const excluded = new Set([raw.pool?.address, ...(raw.pool?.excluded ?? []), raw.router?.address, ...BURN].filter(Boolean));
       const supply = rows.reduce((s, r) => s + BigInt(r.wei), 0n) || 1n;
       const people = rows.filter((r) => !excluded.has(r.holder)).map((r) => ({ address: r.holder, wei: BigInt(r.wei) })).sort((x, y) => (y.wei > x.wei ? 1 : -1));
       const top10 = people.slice(0, 10).reduce((s, r) => s + r.wei, 0n);

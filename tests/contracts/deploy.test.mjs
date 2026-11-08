@@ -24,3 +24,30 @@ test('deploy script deploys a consistent set and prints the server settings', as
   const factory = new Contract(env.MISTHRA_ROUTER_FACTORY, artifacts.MisthraFeeRouterFactory.abi, provider);
   assert.notEqual(await provider.getCode(await factory.implementation()), '0x');
 });
+
+// The dry run's Uniswap cross-checks: router/quoter must agree on factory and WHYPE, fee tier must exist.
+test('deploy dry run refuses a mismatched Uniswap address set', async () => {
+  const { checkUniswap } = await import('../../scripts/deploy-elysium.mjs');
+  const { AbiCoder, id } = await import('ethers');
+  const enc = (t, v) => AbiCoder.defaultAbiCoder().encode([t], [v]);
+  const F = '0x1707327F626496A7b5b3872e7E4d2879Df7d7a9f', W = '0xbA876237B0F021A6c6D852d6c26E107997cC5E81', R = '0x2d01411773c8C24805306E89A41F7855C3c4Fe65', Q = '0x204FAca1764B154221e35c0d20aBb3c525710498';
+  const stub = (answers) => ({
+    provider: null,
+    getCode: async () => '0x01',
+    call: async (tx) => {
+      const sel = tx.data.slice(0, 10), to = tx.to.toLowerCase();
+      if (sel === id('factory()').slice(0, 10)) return enc('address', answers[to]?.factory ?? F);
+      if (sel === id('WETH9()').slice(0, 10)) return enc('address', answers[to]?.weth ?? W);
+      if (sel === id('feeAmountTickSpacing(uint24)').slice(0, 10)) return enc('int24', answers.spacing ?? 200);
+      throw new Error('unexpected call');
+    },
+  });
+  const settings = { whype: W, v3Factory: F, swapRouter: R, poolFee: 10000 };
+  const quiet = console.log; console.log = () => {};
+  try {
+    await checkUniswap(stub({}), settings, Q);
+    await assert.rejects(checkUniswap(stub({ [Q.toLowerCase()]: { factory: '0x000000000000000000000000000000000000dEaD' } }), settings, Q), /Quoter points at factory/);
+    await assert.rejects(checkUniswap(stub({ [R.toLowerCase()]: { weth: '0x000000000000000000000000000000000000dEaD' } }), settings, Q), /Swap router points at WHYPE/);
+    await assert.rejects(checkUniswap(stub({ spacing: 0 }), settings, Q), /Fee tier 10000 is not enabled/);
+  } finally { console.log = quiet; }
+});

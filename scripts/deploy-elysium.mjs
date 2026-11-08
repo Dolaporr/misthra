@@ -14,7 +14,7 @@
 //
 // Deploys: MisthraTradeGateway, MisthraFeeRouter implementation, MisthraFeeRouterFactory,
 // MisthraV3SwapAdapter and MisthraSharedV3TwapPriceGuard, then prints the env lines.
-import { ContractFactory, JsonRpcProvider, Wallet, getAddress, parseEther } from 'ethers';
+import { Contract, ContractFactory, JsonRpcProvider, Wallet, getAddress, parseEther } from 'ethers';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compileRouter } from './compile-contracts.mjs';
@@ -46,6 +46,27 @@ export async function deployAll(signer, settings, { evmVersion = 'cancun', log =
   };
 }
 
+// The swap router (and quoter, if given) must point at the same V3 factory and WHYPE,
+// and the router's pool fee tier must exist. Catches a wrong or mixed-up address list.
+export async function checkUniswap(provider, settings, quoter) {
+  const abi = ['function factory() view returns (address)', 'function WETH9() view returns (address)'];
+  const same = (a, b) => a.toLowerCase() === b.toLowerCase();
+  const pairs = [['Swap router', settings.swapRouter]];
+  if (quoter) {
+    if ((await provider.getCode(quoter)) === '0x') throw new Error(`Quoter ${quoter} has no code.`);
+    pairs.push(['Quoter', getAddress(quoter)]);
+  }
+  for (const [name, address] of pairs) {
+    const c = new Contract(address, abi, provider);
+    const [factory, weth] = await Promise.all([c.factory(), c.WETH9()]).catch(() => { throw new Error(`${name} ${address} does not answer factory()/WETH9(); is it SwapRouter02/QuoterV2?`); });
+    if (!same(factory, settings.v3Factory)) throw new Error(`${name} points at factory ${factory}, not ${settings.v3Factory}.`);
+    if (!same(weth, settings.whype)) throw new Error(`${name} points at WHYPE ${weth}, not ${settings.whype}.`);
+  }
+  const spacing = await new Contract(settings.v3Factory, ['function feeAmountTickSpacing(uint24) view returns (int24)'], provider).feeAmountTickSpacing(settings.poolFee);
+  if (Number(spacing) === 0) throw new Error(`Fee tier ${settings.poolFee} is not enabled on the V3 factory.`);
+  console.log(`Uniswap checks passed: router${quoter ? ' and quoter' : ''} use factory ${settings.v3Factory} and WHYPE ${settings.whype}; fee tier ${settings.poolFee} enabled.`);
+}
+
 async function main() {
   const env = process.env, broadcast = process.argv.includes('--broadcast');
   const need = (k) => { if (!env[k]) throw new Error(`${k} is required`); return env[k]; };
@@ -63,6 +84,7 @@ async function main() {
   for (const [name, address] of Object.entries({ WHYPE: settings.whype, 'Uniswap V3 factory': settings.v3Factory, 'Swap router': settings.swapRouter })) {
     if ((await provider.getCode(address)) === '0x') throw new Error(`${name} ${address} has no code on chain ${chainId}.`);
   }
+  await checkUniswap(provider, settings, first(env.ELYSIUM_UNISWAP_V3_QUOTER));
   const balance = await provider.getBalance(signer.address);
   console.log(`Chain ${chainId}. Deployer ${signer.address} holds ${Number(balance) / 1e18} HYPE.`);
   console.log(`Trade fee ${settings.tradeFeeBps / 100}% to ${settings.feeRecipient}. Router protocol fee 1% to the same address.`);

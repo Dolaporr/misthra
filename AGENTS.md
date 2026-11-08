@@ -4,7 +4,7 @@ Read this file first. It applies to every agent working in this repository: Clau
 
 ## What Misthra is now (decided 2026-11-07/08)
 
-Misthra is a three-in-one product on **Elysium**, Kinetiq's Arbitrum Orbit L2 that settles to HyperEVM and uses **HYPE** as gas. Testnet chain ID `99801`; mainnet launches 2026-11-09 and its chain ID is not yet published. Do not invent it.
+Misthra is a three-in-one product on **Elysium**, Kinetiq's Arbitrum Orbit L2 that settles to HyperEVM and uses **HYPE** as gas. Testnet chain ID `99801`; mainnet is `99901` (public launch 2026-11-09). Mainnet contract addresses and their sources: `docs/elysium-mainnet.md`.
 
 | Section | What it is | Origin |
 |---|---|---|
@@ -17,8 +17,8 @@ One app, one wallet session, one dark chrome design system, one launches table. 
 ## Elysium facts to build against
 
 - HYPE is native gas, bridged 1:1 from HyperEVM. WHYPE is the wrapped ERC-20.
-- Launchpads announced for mainnet: Citadel, Montra, BunnyPad, Ascend, Supercolony. Most launch **straight into Uniswap V3 pools quoted in HYPE, with no bonding curve**. Confirm every pad contract address from the pad itself before using it.
-- Uniswap V2 routers are being tested; V3 pools are what pads use.
+- Pads by coin count (ElyScreener, 2026-11-07): Montra and Boxa ≈78% of coins, both **Uniswap v4**; ElysPump and Volta also v4. Supercolony, Citadel, ArkhamPad, BunnyPad launch straight into locked **Uniswap v3** HYPE pools. Kleos is a bonding curve → v3. Ascend is curve → Pancake Infinity (USDC). See `docs/elysium-mainnet.md`; confirm every pad contract address from the pad itself before relying on it.
+- Creator fees on the pads asked so far are paid in **native HYPE**, pushed to the recipient, which may be a contract.
 - The Kinetiq lifecycle is: long-tail AMM → PropAMM → HyperCore spot order book → HIP-3 perps. HyperCore read/write hooks arrive about four weeks after mainnet. Nothing here may claim HyperCore execution before then.
 - "Final stretch" and "Migrated" in the terminal are **our** Elysium definitions (see `docs/terminal-api.md`), not pump.fun bonding progress.
 

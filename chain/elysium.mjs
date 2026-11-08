@@ -1,8 +1,8 @@
 // Elysium network and protocol settings, read only from the environment.
 //
 // Nothing here is invented: addresses that are not configured stay null, and
-// every feature that needs one reports that it is unavailable. Testnet chain ID
-// 99801 is published; mainnet's is not, so it must be supplied.
+// every feature that needs one reports that it is unavailable. Testnet is 99801,
+// mainnet 99901; addresses are still supplied, never assumed (docs/elysium-mainnet.md).
 import { readFileSync } from 'node:fs';
 import { getAddress, isAddress } from 'ethers';
 import { loadAgoraConfig } from './agora.mjs';
@@ -33,6 +33,10 @@ export function loadElysiumConfig(env = process.env) {
     confirmations: Number(env.ELYSIUM_CONFIRMATIONS ?? 20),
     hypercoreListed: new Set((env.ELYSIUM_HYPERCORE_LISTED || '').split(',').map(addr).filter(Boolean)),
     pads,
+    // Montra (Uniswap v4): set both to index its launches; the hook is excluded from holders.
+    montra: addr(env.ELYSIUM_MONTRA_FACTORY) && addr(env.ELYSIUM_UNISWAP_V4_POOL_MANAGER)
+      ? { factory: addr(env.ELYSIUM_MONTRA_FACTORY), poolManager: addr(env.ELYSIUM_UNISWAP_V4_POOL_MANAGER), hook: addr(env.ELYSIUM_MONTRA_HOOK) }
+      : null,
     agora: loadAgoraConfig(env),
   };
   config.whype = config.whypes[0] ?? null;

@@ -94,3 +94,56 @@ test('indexer turns pool, swap, transfer and router events into launches', async
   assert.equal(checks.tax, 'unknown');
   assert.equal(api.safety.status, 'warn');
 });
+
+// Montra (Uniswap v4): TokenLaunched on the factory, then PoolManager Swaps keyed by poolId.
+test('indexer reads Montra v4 launches and swaps, attributes them to Montra, and ignores other pools', async (t) => {
+  const mocks = (name) => readFileSync(new URL(name, import.meta.url), 'utf8');
+  const { artifacts } = compileRouter({ evmVersion: 'shanghai', extraSources: { 'tests/contracts/RouterMocks.sol': mocks('RouterMocks.sol'), 'tests/contracts/IndexerMocks.sol': mocks('IndexerMocks.sol') } });
+  const rpc = ganache.provider({ logging: { quiet: true }, chain: { chainId: 31337, hardfork: 'shanghai' }, wallet: { totalAccounts: 3, defaultBalance: 1000 } });
+  t.after(() => rpc.disconnect());
+  const provider = new BrowserProvider(rpc, undefined, { cacheTimeout: -1 }); provider.pollingInterval = 10;
+  const [deployer, creator, trader] = await Promise.all([0, 1, 2].map((i) => provider.getSigner(i)));
+  const deploy = async (name, ...args) => { const k = await new ContractFactory(artifacts[name].abi, artifacts[name].bytecode, deployer).deploy(...args); await k.waitForDeployment(); return k; };
+  const wait = async (p) => (await p).wait();
+  const montra = await deploy('MockMontraFactory'), manager = await deploy('MockV4PoolManager'), whype = await deploy('MockWHYPE'), factory = await deploy('MockEventFactory');
+  const W = (await whype.getAddress()).toLowerCase();
+  const config = {
+    live: true, whype: W, whypes: [W], v3Factory: (await factory.getAddress()).toLowerCase(), v3Factories: [(await factory.getAddress()).toLowerCase()], routerFactory: null,
+    montra: { factory: (await montra.getAddress()).toLowerCase(), poolManager: (await manager.getAddress()).toLowerCase(), hook: null },
+    pads: [{ id: 'montra', name: 'Montra', url: 'https://montramarkets.xyz', locksLiquidity: true, contracts: [] }],
+    confirmations: 0, startBlock: 0, hypercoreListed: new Set(), explorer: null,
+  };
+  const store = createTerminalStore(new DatabaseSync(':memory:'));
+  const launched = [], traded = [];
+  const indexer = createIndexer(store, provider, config, { onLaunch: (a) => launched.push(a), onTrade: (a) => traded.push(a) });
+
+  const poolId = keccak256('0x0a'), otherPool = keccak256('0x0b');
+  const feeTo = await creator.getAddress();
+  const token = (await montra.connect(creator).launch.staticCall('Montra Coin', 'MTC', poolId, ZeroAddress, feeTo, await creator.getAddress())).toLowerCase();
+  await wait(montra.connect(creator).launch('Montra Coin', 'MTC', poolId, ZeroAddress, feeTo, await creator.getAddress()));
+  // Native HYPE is currency0, the token currency1. Buy: trader pays 2 HYPE (-), receives 1,000 tokens (+).
+  const sqrtP = 2n ** 96n / 1000n; // ~0.000001 token1 per token0... value only matters for liquidity > 0
+  await wait(manager.connect(trader).swap(poolId, -parseEther('2'), parseEther('1000'), sqrtP, 10n ** 20n));
+  // Sell: trader gives 500 tokens (-), gets 0.9 HYPE (+).
+  await wait(manager.connect(trader).swap(poolId, parseEther('0.9'), -parseEther('500'), sqrtP, 10n ** 20n));
+  // A swap on a pool Misthra does not track is ignored.
+  await wait(manager.connect(trader).swap(otherPool, -parseEther('5'), parseEther('5'), sqrtP, 10n ** 20n));
+
+  await indexer.step();
+  assert.deepEqual(launched, [token]);
+  const raw = store.getRaw(token);
+  assert.equal(raw.padId, 'montra');
+  assert.equal(raw.pool.venue, 'uniswap-v4');
+  assert.equal(raw.pool.poolId, poolId.toLowerCase());
+  assert.equal(raw.feeRecipient, feeTo.toLowerCase());
+  assert.ok(raw.liquidityHype > 0, 'active liquidity estimated from the swap');
+  const view = store.list(config, { limit: 10 }).find((l) => l.address === token);
+  assert.equal(view.pad.name, 'Montra');
+  const trades = store.trades(token, 10);
+  assert.equal(trades.length, 2);
+  const buy = trades.find((x) => x.side === 'buy'), sell = trades.find((x) => x.side === 'sell');
+  assert.ok(buy && sell);
+  assert.equal(Number(buy.amountHype), 2); assert.equal(Number(sell.amountToken), 500);
+  assert.equal(buy.trader.toLowerCase(), (await trader.getAddress()).toLowerCase(), 'trader is the tx signer, not the PoolManager caller');
+  assert.equal(traded.length, 2);
+});

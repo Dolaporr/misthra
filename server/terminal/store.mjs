@@ -51,6 +51,7 @@ export function createTerminalStore(db, { now = () => Date.now() } = {}) {
     priceAt: db.prepare('SELECT price FROM t_trades WHERE token=? AND t<=? ORDER BY t DESC, id DESC LIMIT 1'),
     firstPrice: db.prepare('SELECT price FROM t_trades WHERE token=? ORDER BY t ASC, id ASC LIMIT 1'),
     trades: db.prepare('SELECT tx, t, side, trader, hype, tokens FROM t_trades WHERE token=? ORDER BY t DESC, id DESC LIMIT ?'),
+    netHype: db.prepare("SELECT COALESCE(SUM(CASE WHEN side='buy' THEN hype ELSE -hype END),0) AS net FROM t_trades WHERE token=?"),
     tradesSince: db.prepare('SELECT t, price, hype FROM t_trades WHERE token=? AND t>=? ORDER BY t ASC, id ASC'),
     prune: db.prepare('DELETE FROM t_trades WHERE t<?'),
     setBalance: db.prepare('INSERT INTO t_balances(token,holder,wei) VALUES(?,?,?) ON CONFLICT(token,holder) DO UPDATE SET wei=excluded.wei'),
@@ -75,6 +76,8 @@ export function createTerminalStore(db, { now = () => Date.now() } = {}) {
     setMeta: (key, value) => q.setMeta.run(key, String(value)),
     getRaw: (address) => parse(q.getLaunch.get(address.toLowerCase())),
     allRaw: () => q.allLaunches.all().map(parse),
+    // HYPE paid in by buyers minus HYPE taken out by sellers, over every recorded trade.
+    netHype: (address) => Math.max(0, Number(q.netHype.get(address.toLowerCase()).net)),
     putLaunch(data, source) {
       const address = data.address.toLowerCase();
       const previous = parse(q.getLaunch.get(address));

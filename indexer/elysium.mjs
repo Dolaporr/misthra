@@ -118,8 +118,7 @@ export function createIndexer(store, provider, config, { onLaunch = () => {}, on
     // Montra seeds its pool with tokens only, so the pool's HYPE is what buyers paid in minus
     // what sellers took out. Liquidity = that HYPE counted twice (same convention as v3).
     const { source: _src, ...latest } = store.getRaw(launchToken);
-    const hypeNet = Math.max(0, (latest.hypeNet ?? 0) + (s.side === 'buy' ? s.hype : -s.hype));
-    store.putLaunch({ ...latest, hypeNet, liquidityHype: hypeNet * 2 }, 'live');
+    store.putLaunch({ ...latest, liquidityHype: store.netHype(launchToken) * 2 }, 'live');
     onTrade(launchToken);
   }
 
@@ -192,6 +191,13 @@ export function createIndexer(store, provider, config, { onLaunch = () => {}, on
   }
 
   let timer = null, running = false;
+  // Recompute Montra (v4) liquidity from recorded trades, for launches indexed before this rule.
+  for (const row of store.allRaw?.() ?? []) {
+    if (row?.source !== 'live' || row.pool?.venue !== 'uniswap-v4') continue;
+    const { source: _s, ...raw } = row;
+    store.putLaunch({ ...raw, liquidityHype: store.netHype(raw.address) * 2 }, 'live');
+  }
+
   return {
     step, refreshSafety,
     start(ms = 2000) {

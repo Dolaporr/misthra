@@ -20,7 +20,7 @@ On every `Launch`:
   - Simulated launches return `misthra: false` with "Simulated launch: paper trading only." Keep paper trading as it is for those.
 - **New `feeRecipient: string | null`**: the creator-fee recipient named in the launch event (Montra only for now). On the coin sheet, if it equals a known Misthra router, say "Fees routed by Misthra"; otherwise you may show "Creator fees go to 0x12…ab" with an explorer link.
 - `pad` is now set for simulated launches too, and for Montra launches on mainnet. Real v3 launches from pads whose launcher address we don't know yet still come back with `pad: null`.
-- Liquidity on v4 pools is an estimate (active liquidity at the last swap). Label it "Liquidity (est.)" when `pool.venue === 'uniswap-v4'`.
+- Liquidity on Montra (v4) pools is net HYPE paid in by buyers, counted twice. No special label needed.
 
 ## Frontend tasks, in order
 

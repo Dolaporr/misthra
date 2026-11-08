@@ -43,11 +43,11 @@ export function parseSwap(entry, launch, decimals = 18) {
   const hypeDelta = launch.launchIs0 ? e.args.amount1 : e.args.amount0;
   const tokens = Number(formatUnits(abs(tokenDelta), decimals)), hype = Number(formatUnits(abs(hypeDelta), 18));
   if (!tokens || !hype) return null;
-  return { side: tokenDelta > 0n ? 'buy' : 'sell', tokens, hype, price: hype / tokens, sender: lower(e.args.sender), liquidityHype: activeLiquidityHype(e.args.liquidity, e.args.sqrtPriceX96, launch.launchIs0) };
+  return { side: tokenDelta > 0n ? 'buy' : 'sell', tokens, hype, price: hype / tokens, sender: lower(e.args.sender) };
 }
 
-// Quote-side virtual reserve of the active liquidity, doubled (both sides valued in HYPE),
-// the same convention as the v3 reader. An estimate of depth near the price, not TVL.
+// Quote-side virtual reserve of the active liquidity, doubled. NOT used for display: on
+// mainnet it overstated Montra pools (liquidity above market cap). Kept for reference.
 export function activeLiquidityHype(liquidity, sqrtPriceX96, launchIs0) {
   if (!liquidity || !sqrtPriceX96) return null;
   const L = BigInt(liquidity), s = BigInt(sqrtPriceX96);

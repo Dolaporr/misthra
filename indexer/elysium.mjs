@@ -115,7 +115,11 @@ export function createIndexer(store, provider, config, { onLaunch = () => {}, on
     // v4 'sender' is the router that called the PoolManager; the trader is the transaction's signer.
     if (!senders.has(entry.transactionHash)) senders.set(entry.transactionHash, (await provider.getTransaction(entry.transactionHash))?.from ?? s.sender);
     store.addTrade({ token: launchToken, tx: entry.transactionHash, logIndex: entry.index, t: await timeOf(entry.blockNumber), side: s.side, trader: lower(senders.get(entry.transactionHash)), hype: s.hype, tokens: s.tokens, price: s.price });
-    if (s.liquidityHype != null) store.putLaunch({ ...store.getRaw(launchToken), liquidityHype: s.liquidityHype }, 'live');
+    // Montra seeds its pool with tokens only, so the pool's HYPE is what buyers paid in minus
+    // what sellers took out. Liquidity = that HYPE counted twice (same convention as v3).
+    const { source: _src, ...latest } = store.getRaw(launchToken);
+    const hypeNet = Math.max(0, (latest.hypeNet ?? 0) + (s.side === 'buy' ? s.hype : -s.hype));
+    store.putLaunch({ ...latest, hypeNet, liquidityHype: hypeNet * 2 }, 'live');
     onTrade(launchToken);
   }
 

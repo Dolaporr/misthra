@@ -2,7 +2,7 @@
 
 Shared contract between the backend (Claude) and the frontend (Codex). Base path `/api`, JSON, cookie session as today (`credentials: 'include'`). Amounts are **decimal strings** in HYPE (18 decimals) unless named `*Usd`. Times are Unix milliseconds. Addresses are lowercase hex.
 
-Liquidity is the HYPE side of the pool counted twice, a common convention. For Uniswap v4 pools (Montra) it is estimated from the pool's active liquidity at the last swap: depth near the price, not total value locked. Holder counts are exact only for tokens created inside the indexed range.
+Liquidity is the HYPE side of the pool counted twice, a common convention. For Montra (Uniswap v4) pools, which start with tokens only, the HYPE side is the HYPE buyers paid in minus what sellers took out (LP fees included), counted twice. Holder counts are exact only for tokens created inside the indexed range.
 
 Until the indexer is connected to an Elysium RPC, every endpoint serves the simulated feed with `source: "simulated"`. The sample shapes live in `fixtures/launches.sample.json`.
 

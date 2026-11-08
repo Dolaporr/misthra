@@ -136,7 +136,7 @@ test('indexer reads Montra v4 launches and swaps, attributes them to Montra, and
   assert.equal(raw.pool.venue, 'uniswap-v4');
   assert.equal(raw.pool.poolId, poolId.toLowerCase());
   assert.equal(raw.feeRecipient, feeTo.toLowerCase());
-  assert.ok(raw.liquidityHype > 0, 'active liquidity estimated from the swap');
+  assert.ok(Math.abs(raw.liquidityHype - 2.2) < 1e-9, 'liquidity = (2 HYPE in - 0.9 HYPE out) x 2');
   const view = store.list(config, { limit: 10 }).find((l) => l.address === token);
   assert.equal(view.pad.name, 'Montra');
   assert.equal(view.pool.quote, 'HYPE');

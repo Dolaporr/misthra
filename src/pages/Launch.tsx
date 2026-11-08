@@ -3,6 +3,8 @@ import { Copy, Flame, Plus, Trash2, Wallet as WalletIcon, Coins } from 'lucide-r
 import { post } from '../api';
 import { useApp } from '../state';
 import { sendWithWallet, type Tx } from '../terminal/model';
+import {CONFIRMED_FEE_RECIPIENT_PADS,oneHypeBucketPreview,percentToBps} from '../terminal/router-preview';
+import '../terminal/router-preview.css';
 
 type Kind = 'wallets' | 'native' | 'buyback-burn';
 type WalletRow = { address: string; pct: string; editable: boolean };
@@ -15,7 +17,7 @@ const KINDS: { kind: Kind; title: string; text: string; Icon: typeof Coins }[] =
   { kind: 'buyback-burn', title: 'Buy back and burn', text: 'Buys your token on its pool and sends it to the burn address. Every swap is held to a price guard.', Icon: Flame },
 ];
 const isAddr = (a: string) => /^0x[0-9a-fA-F]{40}$/.test(a.trim());
-const bps = (p: string) => Math.round(Number(p) * 100);
+const bps = (p: string) => percentToBps(p) ?? NaN;
 
 export function Launch() {
   const { identity, notify, openWallet } = useApp();
@@ -28,13 +30,15 @@ export function Launch() {
 
   const on = buckets.filter((b) => b.on);
   const total = on.reduce((s, b) => s + bps(b.pct), 0);
+  const invalidShares = on.some(b => percentToBps(b.pct) === null || bps(b.pct) <= 0);
   const walletProblems = on.filter((b) => b.kind !== 'buyback-burn').map((b) => {
+    if (b.wallets.some(w => percentToBps(w.pct) === null || bps(w.pct) <= 0)) return `${KINDS.find(k => k.kind === b.kind)!.title}: wallet shares must be above 0%, at most 100%, with up to two decimal places.`;
     const sum = b.wallets.reduce((s, w) => s + bps(w.pct), 0);
     if (b.wallets.some((w) => !isAddr(w.address))) return `${KINDS.find((k) => k.kind === b.kind)!.title}: every wallet needs a valid address.`;
     if (sum !== 10_000) return `${KINDS.find((k) => k.kind === b.kind)!.title}: wallet shares add up to ${sum / 100}%, not 100%.`;
     return null;
   }).filter(Boolean) as string[];
-  const ready = isAddr(creator) && on.length > 0 && total === 10_000 && !walletProblems.length;
+  const ready = isAddr(creator) && on.length > 0 && total === 10_000 && !invalidShares && !walletProblems.length;
 
   const update = (i: number, patch: Partial<Bucket>) => { setPlan(null); setBuckets((bs) => bs.map((b, j) => (j === i ? { ...b, ...patch } : b))); };
   const updateWallet = (i: number, w: number, patch: Partial<WalletRow>) => update(i, { wallets: buckets[i].wallets.map((x, k) => (k === w ? { ...x, ...patch } : x)) });
@@ -55,10 +59,11 @@ export function Launch() {
 
   return <div className="page-shell launch-page">
     <header className="launch-intro">
-      <p className="eyebrow">Launch</p>
       <h1>Route your launch’s fees by rules you set once.</h1>
       <p>A Misthra fee router is a small contract you name as your token’s fee recipient on the launchpad. Fees arrive there and are split the way you choose here: to wallets, in WHYPE or native HYPE, or into a buyback that burns your token. The rules are fixed when the router is deployed. Anyone can trigger a payout, and payouts only ever go where you said. Misthra keeps a fixed 1% of fees.</p>
     </header>
+
+    <section className="launch-support-note" aria-labelledby="launchpad-support-title"><h2 id="launchpad-support-title">Which launchpads support this?</h2>{CONFIRMED_FEE_RECIPIENT_PADS.length?<><p>These launchpads have confirmed support for a custom fee recipient:</p><ul>{CONFIRMED_FEE_RECIPIENT_PADS.map(pad=><li key={pad.name}><a href={pad.url} target="_blank" rel="noreferrer">{pad.name}</a></li>)}</ul></>:<p>We’re confirming which launchpads accept a custom fee recipient. The confirmed list will appear here.</p>}</section>
 
     <ol className="wizard">
       <li className="panel"><h2>1. Creator wallet</h2>
@@ -69,10 +74,12 @@ export function Launch() {
       </li>
 
       <li className="panel"><h2>2. Where fees go</h2>
+        <p className="router-example-note">Distribution example: for 1 HYPE in launch fees, 0.01 HYPE is the protocol fee and 0.99 HYPE is split between your buckets. This is an example, not live earnings.</p>
         <div className="bucket-list">
           {KINDS.map((k, i) => { const b = buckets[i]; return <div key={k.kind} className={`bucket${b.on ? ' on' : ''}`}>
             <label className="bucket-toggle"><input type="checkbox" checked={b.on} onChange={(e) => update(i, { on: e.target.checked })} /><k.Icon size={18} aria-hidden="true" /><span><strong>{k.title}</strong><span className="muted small">{k.text}</span></span></label>
             {b.on && <label className="share">Share<input inputMode="decimal" value={b.pct} onChange={(e) => update(i, { pct: e.target.value })} aria-label={`${k.title} share in percent`} />%</label>}
+            {b.on && <p className="router-bucket-preview">{oneHypeBucketPreview(b.pct)===null?'Enter a share from 0% to 100% with up to two decimal places.':`Example: ${oneHypeBucketPreview(b.pct)} HYPE to this bucket from 1 HYPE of fees, after the protocol fee.`}</p>}
             {b.on && k.kind !== 'buyback-burn' && <div className="wallet-rows">
               {b.wallets.map((w, wi) => <div key={wi} className="wallet-row">
                 <input value={w.address} onChange={(e) => updateWallet(i, wi, { address: e.target.value })} placeholder="Wallet 0x…" aria-label={`Wallet ${wi + 1} address`} spellCheck={false} />
@@ -84,7 +91,8 @@ export function Launch() {
             </div>}
           </div>; })}
         </div>
-        <p className={`total ${total === 10_000 ? 'ok' : 'bad'}`} aria-live="polite">Shares total {total / 100}%{total !== 10_000 && ' (they must total 100%)'}</p>
+        <p className={`total ${total === 10_000 ? 'ok' : 'bad'}`} aria-live="polite">Shares total {Number.isFinite(total)?`${total / 100}%`:'—'}{total !== 10_000 && ' (they must total 100%)'}</p>
+        {invalidShares && <p className="error-text">Each enabled bucket needs a share above 0%, at most 100%, with up to two decimal places.</p>}
         {walletProblems.map((p) => <p key={p} className="error-text">{p}</p>)}
       </li>
 

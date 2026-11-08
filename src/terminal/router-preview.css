@@ -12,6 +12,12 @@
 .pad-unconfirmed summary{min-height:44px;padding:12px 0;cursor:pointer;color:#b4d0ff}
 .pad-unconfirmed ul{padding-left:20px}.pad-unconfirmed li{margin-bottom:14px}
 .bucket-toggle:has(input:disabled){opacity:.65;cursor:not-allowed}
+.launch-page .bucket{grid-template-columns:minmax(0,1fr)}
+.launch-page .bucket>*{min-width:0;max-width:100%}
+.launch-page .bucket-toggle>span{min-width:0;overflow-wrap:anywhere}
+.launch-page .wallet-row{min-width:0;max-width:100%}
+.launch-page .wallet-row input:not([type=checkbox]):first-child{min-width:0;max-width:100%;width:100%;flex-basis:280px}
+.launch-page .wallet-row .check{flex-shrink:1;white-space:normal}
 @media(max-width:760px){.pad-support-list{grid-template-columns:1fr;gap:18px}}
 .router-example-note{font-size:13px;line-height:1.85;color:#bbcce7;max-width:65ch;margin:0 0 24px}
 .router-bucket-preview{font-size:12px;line-height:1.8;color:#c2d8fd;padding:12px 0 2px;margin:0;max-width:65ch}

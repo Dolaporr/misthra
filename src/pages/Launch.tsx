@@ -3,8 +3,9 @@ import { Copy, Flame, Plus, Trash2, Wallet as WalletIcon, Coins } from 'lucide-r
 import { post } from '../api';
 import { useApp } from '../state';
 import { sendWithWallet, type Tx } from '../terminal/model';
-import {CONFIRMED_FEE_RECIPIENT_PADS,oneHypeBucketPreview,percentToBps} from '../terminal/router-preview';
+import {buybackUnavailable,oneHypeBucketPreview,percentToBps} from '../terminal/router-preview';
 import '../terminal/router-preview.css';
+import {PadSupport,usePadSupport} from '../terminal/PadSupport';
 
 type Kind = 'wallets' | 'native' | 'buyback-burn';
 type WalletRow = { address: string; pct: string; editable: boolean };
@@ -27,6 +28,11 @@ export function Launch() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [deployed, setDeployed] = useState<string | null>(null);
+
+  const support=usePadSupport();
+  const [selectedPads,setSelectedPads]=useState<string[]>([]);
+  const blocked=buybackUnavailable(support.data?.pads||[],selectedPads);
+  const choosePads=(ids:string[])=>{setSelectedPads(ids);setPlan(null);if(buybackUnavailable(support.data?.pads||[],ids))setBuckets(bs=>bs.map(b=>b.kind==='buyback-burn'?{...b,on:false}:b))};
 
   const on = buckets.filter((b) => b.on);
   const total = on.reduce((s, b) => s + bps(b.pct), 0);
@@ -63,29 +69,30 @@ export function Launch() {
       <p>A Misthra fee router is a small contract you name as your token’s fee recipient on the launchpad. Fees arrive there and are split the way you choose here: to wallets, in WHYPE or native HYPE, or into a buyback that burns your token. The rules are fixed when the router is deployed. Anyone can trigger a payout, and payouts only ever go where you said. Misthra keeps a fixed 1% of fees.</p>
     </header>
 
-    <section className="launch-support-note" aria-labelledby="launchpad-support-title"><h2 id="launchpad-support-title">Which launchpads support this?</h2>{CONFIRMED_FEE_RECIPIENT_PADS.length?<><p>These launchpads have confirmed support for a custom fee recipient:</p><ul>{CONFIRMED_FEE_RECIPIENT_PADS.map(pad=><li key={pad.name}><a href={pad.url} target="_blank" rel="noreferrer">{pad.name}</a></li>)}</ul></>:<p>We’re confirming which launchpads accept a custom fee recipient. The confirmed list will appear here.</p>}</section>
+    <PadSupport data={support.data} error={support.error} reload={support.reload} selected={selectedPads} onSelect={choosePads}/>
 
     <ol className="wizard">
       <li className="panel"><h2>1. Creator wallet</h2>
         <p className="muted small">This wallet deploys the router and is the only one that can bind your token or move an editable wallet later.</p>
         <label className="field-label" htmlFor="creator">Creator address</label>
-        <div className="row"><input id="creator" value={creator} onChange={(e) => { setCreator(e.target.value); setPlan(null); }} placeholder="0x…" spellCheck={false} />{identity.role !== 'wallet' && <button className="button secondary" onClick={openWallet}>Connect wallet</button>}</div>
-        {creator && !isAddr(creator) && <p className="error-text">That is not a valid address.</p>}
+        <div className="row"><input id="creator" aria-invalid={!!creator&&!isAddr(creator)} aria-describedby={creator&&!isAddr(creator)?'creator-error':undefined} value={creator} onChange={(e) => { setCreator(e.target.value); setPlan(null); }} placeholder="0x…" spellCheck={false} />{identity.role !== 'wallet' && <button className="button secondary" onClick={openWallet}>Connect wallet</button>}</div>
+        {creator && !isAddr(creator) && <p className="error-text" id="creator-error">That is not a valid address.</p>}
       </li>
 
       <li className="panel"><h2>2. Where fees go</h2>
         <p className="router-example-note">Distribution example: for 1 HYPE in launch fees, 0.01 HYPE is the protocol fee and 0.99 HYPE is split between your buckets. This is an example, not live earnings.</p>
         <div className="bucket-list">
           {KINDS.map((k, i) => { const b = buckets[i]; return <div key={k.kind} className={`bucket${b.on ? ' on' : ''}`}>
-            <label className="bucket-toggle"><input type="checkbox" checked={b.on} onChange={(e) => update(i, { on: e.target.checked })} /><k.Icon size={18} aria-hidden="true" /><span><strong>{k.title}</strong><span className="muted small">{k.text}</span></span></label>
+            <label className="bucket-toggle"><input type="checkbox" checked={b.on} disabled={k.kind==='buyback-burn'&&blocked} aria-describedby={k.kind==='buyback-burn'&&blocked?'buyback-unavailable':undefined} onChange={(e) => update(i, { on: e.target.checked })} /><k.Icon size={18} aria-hidden="true" /><span><strong>{k.title}</strong><span className="muted small">{k.text}</span></span></label>
+            {k.kind==='buyback-burn'&&blocked&&<p className="router-bucket-preview" id="buyback-unavailable">Buyback-and-burn is unavailable for the selected pads because their pools do not use the router’s supported Uniswap v3 route. Choose a wallet payout instead.</p>}
             {b.on && <label className="share">Share<input inputMode="decimal" value={b.pct} onChange={(e) => update(i, { pct: e.target.value })} aria-label={`${k.title} share in percent`} />%</label>}
             {b.on && <p className="router-bucket-preview">{oneHypeBucketPreview(b.pct)===null?'Enter a share from 0% to 100% with up to two decimal places.':`Example: ${oneHypeBucketPreview(b.pct)} HYPE to this bucket from 1 HYPE of fees, after the protocol fee.`}</p>}
             {b.on && k.kind !== 'buyback-burn' && <div className="wallet-rows">
               {b.wallets.map((w, wi) => <div key={wi} className="wallet-row">
-                <input value={w.address} onChange={(e) => updateWallet(i, wi, { address: e.target.value })} placeholder="Wallet 0x…" aria-label={`Wallet ${wi + 1} address`} spellCheck={false} />
-                <input className="pct" inputMode="decimal" value={w.pct} onChange={(e) => updateWallet(i, wi, { pct: e.target.value })} aria-label={`Wallet ${wi + 1} share in percent`} /><span>%</span>
+                <input value={w.address} onChange={(e) => updateWallet(i, wi, { address: e.target.value })} placeholder="Wallet 0x…" aria-label={`${k.title}: wallet ${wi + 1} address`} spellCheck={false} />
+                <input className="pct" inputMode="decimal" value={w.pct} onChange={(e) => updateWallet(i, wi, { pct: e.target.value })} aria-label={`${k.title}: wallet ${wi + 1} share in percent`} /><span>%</span>
                 <label className="check small"><input type="checkbox" checked={w.editable} onChange={(e) => updateWallet(i, wi, { editable: e.target.checked })} />Editable later</label>
-                {b.wallets.length > 1 && <button className="icon-button" aria-label={`Remove wallet ${wi + 1}`} onClick={() => update(i, { wallets: b.wallets.filter((_, x) => x !== wi) })}><Trash2 size={15} /></button>}
+                {b.wallets.length > 1 && <button className="icon-button" aria-label={`${k.title}: remove wallet ${wi + 1}`} onClick={() => update(i, { wallets: b.wallets.filter((_, x) => x !== wi) })}><Trash2 size={15} /></button>}
               </div>)}
               {b.wallets.length < 16 && <button className="button subtle" onClick={() => update(i, { wallets: [...b.wallets, { address: '', pct: '0', editable: false }] })}><Plus size={14} /> Add wallet</button>}
             </div>}

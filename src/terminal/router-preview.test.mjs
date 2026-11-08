@@ -1,6 +1,9 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {CONFIRMED_FEE_RECIPIENT_PADS,percentToBps,oneHypeBucketPreview} from './router-preview.ts';
-test('launchpad support is not asserted until confirmed entries are supplied',()=>assert.deepEqual(CONFIRMED_FEE_RECIPIENT_PADS,[]));
+import {buybackUnavailable,percentToBps,oneHypeBucketPreview} from './router-preview.ts';
+test('buyback is disabled only when every selected pad explicitly cannot support it',()=>{
+ const pads=[{id:'a',buyback:'no'},{id:'b',buyback:'no'},{id:'c',buyback:'unconfirmed'}];
+ assert.equal(buybackUnavailable(pads,[]),false);assert.equal(buybackUnavailable(pads,['a','b']),true);assert.equal(buybackUnavailable(pads,['a','c']),false);assert.equal(buybackUnavailable(pads,['missing']),false);
+});
 test('fee examples distribute exactly 0.99 HYPE after the fixed protocol fee',()=>{
   assert.equal(oneHypeBucketPreview('100'),'0.99');assert.equal(oneHypeBucketPreview('50'),'0.495');assert.equal(oneHypeBucketPreview('33.33'),'0.329967');assert.equal(oneHypeBucketPreview('0.01'),'0.000099');assert.equal(oneHypeBucketPreview('0'),'0');
 });

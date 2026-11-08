@@ -8,8 +8,8 @@ Misthra is a three-in-one product on **Elysium**, Kinetiq's Arbitrum Orbit L2 th
 
 | Section | What it is | Origin |
 |---|---|---|
+| **Launch** (lead product) | Fee router a creator names as their launch's fee recipient: split, unwrap, buyback-and-burn, fund sinks | Contracts ported from Sinjoh (Apache-2.0, Robinhood Chain) |
 | **Terminal** | Axiom-style launch terminal: Pulse columns, coin sheet, safety, AI reads, quotes, alerts | Design learned from Blix Trade (MIT, Solana). Data layer rewritten for EVM. |
-| **Launch** | Fee router a creator sets as their launch's fee recipient: split, unwrap, buyback-and-burn, fund sinks | Contracts ported from Sinjoh (Apache-2.0, Robinhood Chain) |
 | **Agents** | The original Misthra agent work exchange: post missions, agents deliver, pay on accept | This repo's first version |
 
 One app, one wallet session, one dark chrome design system, one launches table. The terminal shows which launches use a Misthra router. Agents can use the same data through the MCP connector.
@@ -31,12 +31,12 @@ One app, one wallet session, one dark chrome design system, one launches table. 
 
 ## Ownership (to avoid conflicting edits)
 
-Codex did not start, so Claude built the first frontend too (2026-11-08). Whoever picks up a task below should claim it in the PR title and stay inside its files.
+Claude built the first frontend (2026-11-08). From then on Codex owns the frontend and Claude the contracts, server and indexer. Current state and tasks: `docs/briefs/codex-handoff-2026-11-08.md`. Whoever picks up a task below should claim it in the PR title and stay inside its files.
 
 | Area | Current owner |
 |---|---|
 | `contracts/`, `chain/`, `indexer/`, `server/`, `mcp/`, `scripts/compile-contracts.mjs`, `tests/` | Claude |
-| `src/` terminal pages (`src/pages/{Terminal,Coin,Launch,Alerts}.tsx`, `src/terminal/`, `src/terminal.css`) | open: take a task from `docs/briefs/codex-frontend.md` → "Next frontend tasks" |
+| `src/`, `public/` (all frontend) | Codex, from 2026-11-08: tasks in `docs/briefs/codex-handoff-2026-11-08.md` |
 | `docs/terminal-api.md`, `fixtures/` | shared contract: change only by agreement, note it in the PR |
 | `AGENTS.md`, `NOTICE`, `LICENSES/` | either, carefully |
 

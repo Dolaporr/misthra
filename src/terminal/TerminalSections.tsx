@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
-import {ArrowUpRight,Search,ShieldQuestion,Wallet} from 'lucide-react';
+import {ArrowUpRight,ChevronRight,Menu,Search,ShieldQuestion,Wallet,X} from 'lucide-react';
 import {age,hype,pct,type Feed} from './model';
 import {tradeAccess} from './trade-access';
 import {validQuickAmount} from './quick-amount';
@@ -8,7 +8,9 @@ import {Alerts} from '../pages/Alerts';
 export type TerminalSection='pulse'|'new'|'trending'|'tracker'|'orders'|'portfolio';
 const sections:[TerminalSection,string][]=[['new','New pairs'],['trending','Trending'],['pulse','Memescope'],['tracker','Trackers'],['orders','Orders'],['portfolio','Portfolio']];
 export function TerminalNavigation({selected,onSelect}:{selected:TerminalSection;onSelect:(value:TerminalSection)=>void}){
- return <nav className="terminal-section-nav" aria-label="Terminal tools">{sections.map(([key,label])=><button key={key} aria-current={key===selected?'page':undefined} onClick={()=>onSelect(key)}>{label}</button>)}</nav>;
+ const menu=useRef<HTMLDialogElement>(null);
+ const choose=(value:TerminalSection)=>{onSelect(value);menu.current?.close()};
+ return <><nav className="terminal-section-nav" aria-label="Terminal tools">{sections.map(([key,label])=><button key={key} aria-current={key===selected?'page':undefined} onClick={()=>onSelect(key)}>{label}</button>)}</nav><div className="terminal-phone-navigation"><strong>{sections.find(([key])=>key===selected)?.[1]}</strong><button onClick={()=>menu.current?.showModal()} aria-label="Open terminal menu"><Menu size={17}/>Tools</button></div><dialog ref={menu} className="terminal-phone-menu" aria-labelledby="terminal-menu-title"><header><h2 id="terminal-menu-title">Terminal</h2><button aria-label="Close terminal menu" onClick={()=>menu.current?.close()}><X size={20}/></button></header><p>Elysium · HYPE</p><nav aria-label="Terminal pages">{sections.map(([key,label])=><button key={key} aria-current={key===selected?'page':undefined} onClick={()=>choose(key)}>{label}<ChevronRight size={16}/></button>)}</nav><div className="terminal-menu-links"><a href="#/launch" onClick={()=>menu.current?.close()}>Fee routers<ArrowUpRight size={15}/></a><a href="#/board" onClick={()=>menu.current?.close()}>Agents<ArrowUpRight size={15}/></a><a href="#/guide" onClick={()=>menu.current?.close()}>How it works<ArrowUpRight size={15}/></a></div></dialog></>;
 }
 export function TerminalWelcome(){
  const dialog=useRef<HTMLDialogElement>(null);

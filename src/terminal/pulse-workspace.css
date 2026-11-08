@@ -30,21 +30,22 @@
 .terminal-welcome ul{padding-left:18px;margin:20px 0}
 .terminal-welcome .button{margin-top:22px}
 @media(max-width:600px){.terminal-tool-page{padding:22px 14px}.terminal-section-nav{gap:20px;padding:0 14px}.discovery-controls{gap:8px}.discovery-controls label:first-child{width:100%}.discovery-controls label:first-child input{max-width:none;flex:1;min-width:0}.discovery-scroll{max-height:none}.terminal-welcome{padding:24px}}
+.terminal-phone-navigation{display:none}.terminal-phone-menu{background:#141b29;color:#eef1f7;border:0;border-left:1px solid #354158;width:100%;max-width:420px;height:100svh;max-height:100svh;margin:0 0 0 auto;padding:22px;overflow:auto}
+.terminal-phone-menu::backdrop{background:#050812a8;backdrop-filter:blur(8px)}
+.terminal-phone-menu header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}.terminal-phone-menu h2{font-size:24px;letter-spacing:-.025em}.terminal-phone-menu header button{width:44px;height:44px;display:grid;place-items:center}
+.terminal-phone-menu>p{font-size:11px;color:#b8c8e3;margin-bottom:24px}.terminal-phone-menu nav{display:flex;flex-direction:column}.terminal-phone-menu nav button,.terminal-menu-links a{display:flex;align-items:center;justify-content:space-between;text-align:left;min-height:54px;font-size:14px;color:#c3cfe2;border-bottom:1px solid #263143}.terminal-phone-menu nav button[aria-current=page]{color:#91b4ff}.terminal-menu-links{display:flex;flex-direction:column;margin-top:30px}.terminal-menu-links a{font-size:12px}
 @media(max-width:600px){
- .discovery-table,.discovery-table tbody{display:block;white-space:normal}
- .discovery-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
- .discovery-table tr{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #2a3445;padding:10px 4px;gap:0}
- .discovery-table tr:first-child{border-top:0}
- .discovery-table td{border:0;padding:8px 10px;min-width:0;overflow-wrap:anywhere}
- .discovery-table td:first-child{grid-column:1/-1}
- .discovery-table td:not(:first-child)::before{display:block;font-size:10px;color:#b8c8e3;margin-bottom:6px}
- .discovery-table td:nth-child(2)::before{content:'Created'}
- .discovery-table td:nth-child(3)::before{content:'Liquidity · HYPE'}
- .discovery-table td:nth-child(4)::before{content:'Market cap · HYPE'}
- .discovery-table td:nth-child(5)::before{content:'5m volume · HYPE'}
- .discovery-table td:nth-child(6)::before{content:'1h change'}
- .discovery-table td:nth-child(7)::before{content:'Checks'}
- .discovery-pair{min-width:0}.discovery-table td .button{max-width:100%;overflow-wrap:anywhere;white-space:normal}
+ .terminal-section-nav{display:none}.terminal-phone-navigation{display:flex;align-items:center;justify-content:space-between;min-height:48px;padding:0 14px;border-bottom:1px solid #2a3445;background:#10151e}.terminal-phone-navigation strong{font-size:12px}.terminal-phone-navigation button{display:flex;align-items:center;gap:8px;min-height:44px;color:#c3cfe2;font-size:11px}
+ .terminal-tool-page{padding:16px 10px}.terminal-tool-page h1{font-size:23px}.terminal-tool-page header>p{font-size:11px;margin-bottom:14px}
+ .discovery-scroll{border-radius:8px}.discovery-table,.discovery-table tbody,.discovery-table thead{display:block;white-space:normal}
+ .discovery-table tr{display:grid;grid-template-columns:minmax(88px,1.5fr) minmax(45px,.8fr) minmax(45px,.8fr) minmax(40px,.65fr);align-items:center;border-top:1px solid #2a3445;padding:0 4px;gap:2px;min-height:62px}
+ .discovery-table:has(th:nth-child(8)) tr{grid-template-columns:minmax(74px,1.5fr) minmax(40px,.8fr) minmax(40px,.8fr) 34px 44px}
+ .discovery-table thead{position:sticky;top:0;z-index:1}.discovery-table thead tr{min-height:34px;background:#171f2d;border-top:0}
+ .discovery-table td,.discovery-table th{border:0;padding:5px 2px;min-width:0;font-size:10px;overflow:hidden;text-overflow:ellipsis;position:static;white-space:nowrap}
+ .discovery-table th{font-size:8px;color:#b8c8e3;white-space:normal}
+ .discovery-table :is(td,th):nth-child(2),.discovery-table :is(td,th):nth-child(3),.discovery-table :is(td,th):nth-child(6){display:none}
+ .discovery-pair{min-width:0;gap:6px;min-height:48px}.discovery-pair .launch-avatar{width:28px;height:28px;font-size:9px}.discovery-pair>span:last-child{min-width:0;overflow:hidden}.discovery-pair strong{display:block;overflow:hidden;text-overflow:ellipsis;font-size:10px}.discovery-pair small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:8px;margin-top:5px}
+ .discovery-table .button{font-size:9px;min-height:44px;width:44px;max-width:44px;padding:3px;white-space:normal;overflow-wrap:anywhere}
 }
 .pulse-reading-area{display:flex;flex:1;min-height:0}
 .pulse-reading-area>.pulse-columns{width:100%}

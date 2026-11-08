@@ -1,5 +1,5 @@
 // Types from docs/terminal-api.md, plus small helpers shared by the terminal pages.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api';
 
 export type Source = 'live' | 'simulated';
@@ -35,25 +35,24 @@ export const STAGES: { key: Stage; label: string; help: string }[] = [
   { key: 'migrated', label: 'HyperCore', help: 'Has a HyperCore spot market. Taken from a reviewed list until Kinetiq’s hooks ship.' },
 ];
 
-// Polls a path, pausing while the tab is hidden. Keeps the last good data on errors.
-export function usePoll<T>(path: string | null, ms = 3000) {
-  const [data, setData] = useState<T | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const alive = useRef(true);
-  useEffect(() => {
-    alive.current = true;
-    if (!path) { setData(null); return; }
-    let timer: number | undefined;
-    const run = async () => {
-      if (document.hidden) { timer = window.setTimeout(run, ms); return; }
-      try { const d = await api<T>(path); if (alive.current) { setData(d); setError(null); } }
-      catch (e) { if (alive.current) setError((e as Error).message); }
-      if (alive.current) timer = window.setTimeout(run, ms);
+// Polls only while visible, aborting obsolete requests on path or identity changes.
+export function usePoll<T>(path:string|null,ms=3000,contextKey:string|null=null){
+  const [data,setData]=useState<T|null>(null),[error,setError]=useState<string|null>(null),[retry,setRetry]=useState(0);
+  useEffect(()=>{
+    let active=true,timer:number|undefined,fetching=false;const controller=new AbortController();
+    setData(null);setError(null);
+    if(!path)return()=>{active=false;controller.abort()};
+    const run=async()=>{
+      if(!active||fetching)return;
+      if(document.hidden){timer=window.setTimeout(run,ms);return}
+      fetching=true;
+      try{const value=await api<T>(path,{signal:controller.signal});if(active){setData(value);setError(null)}}catch(e){if(active)setError((e as Error).message)}finally{fetching=false;if(active)timer=window.setTimeout(run,ms)}
     };
-    run();
-    return () => { alive.current = false; window.clearTimeout(timer); };
-  }, [path, ms]);
-  return { data, error };
+    const visibility=()=>{if(!document.hidden){window.clearTimeout(timer);void run()}};
+    void run();document.addEventListener('visibilitychange',visibility);
+    return()=>{active=false;controller.abort();window.clearTimeout(timer);document.removeEventListener('visibilitychange',visibility)};
+  },[path,ms,contextKey,retry]);
+  return {data,error,reload:()=>setRetry(value=>value+1)};
 }
 
 export function hype(value: string | number, digits = 4) {

@@ -8,7 +8,7 @@
 .pulse-column-header .count{font-size:11px;padding:1px 5px}
 .pulse-column-filter-toggle{display:flex;align-items:center;gap:7px;font-size:11px;padding:9px;min-height:44px;color:#c6d8f7;border-radius:7px}
 .pulse-column-filter-toggle[aria-expanded=true]{background:#223b63}
-.pulse-help-button.icon-button{width:35px;height:44px;color:#b1c6e6}
+.pulse-help-button.icon-button{width:44px;height:44px;color:#b1c6e6}
 .pulse-filter-dot{width:5px;height:5px;border-radius:50%;background:#aac8ff}
 .pulse-definition{font-size:12px;line-height:1.8;padding:15px;margin:0;background:#18263c;color:#c3d4ef;border-bottom:1px solid #34435b}
 .column-filter-form{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:15px;border-bottom:1px solid #34435b;max-height:380px;overflow-y:auto;flex-shrink:0;background:#141f30}

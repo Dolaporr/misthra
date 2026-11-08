@@ -28,7 +28,7 @@ export function Coin({ address }: { address: string }) {
       <span className="launch-avatar large" aria-hidden="true">{l.image ? <img src={l.image} alt="" /> : l.symbol.slice(0, 2)}</span>
       <div>
         <h1>{l.symbol} <span className="muted">{l.name}</span></h1>
-        <p className="coin-meta"><SourceBadge source={data.source} /><span className="badge">{l.pad?.name ?? 'Unknown pad'}</span>{stage && <span className="badge" title={stage.help}>{stage.label}</span>}<span className="muted">Created {age(l.createdAt)} ago</span><button className="copy" onClick={() => navigator.clipboard?.writeText(l.address)} title="Copy token address">{shortAddr(l.address)}</button></p>
+        <p className="coin-meta"><SourceBadge source={data.source} /><span className="badge">{l.pad?.name ?? 'Unknown pad'}</span>{stage && <span className="badge" title={stage.help}>{stage.label}</span>}<span className="muted">Created {age(l.createdAt)} ago</span><button className="copy" onClick={() => navigator.clipboard?.writeText(l.address)} title="Copy token address" aria-label={`Copy ${l.symbol} token address`}>{shortAddr(l.address)}</button></p>
       </div>
       <div className="coin-price"><strong>{hype(l.priceHype, 5)} HYPE</strong><span className={(l.change1hPct ?? 0) >= 0 ? 'up' : 'down'}>{pct(l.change1hPct)} 1h</span><span className={(l.change5mPct ?? 0) >= 0 ? 'up' : 'down'}>{pct(l.change5mPct)} 5m</span></div>
       <nav className="coin-links" aria-label="External links">
@@ -48,9 +48,9 @@ export function Coin({ address }: { address: string }) {
           {[['Market cap', `${hype(l.mcapHype)} HYPE`], ['Liquidity', `${hype(l.liquidityHype)} HYPE`], ['5m volume', `${hype(l.volume5mHype)} HYPE`], ['24h volume', `${hype(l.volume24hHype)} HYPE`], ['24h trades', l.txCount24h], ['24h traders', l.traders24h], ['Holders', l.holders], ['Top 10', l.top10Pct == null ? '–' : `${l.top10Pct}%`]].map(([k, v]) => <div key={String(k)}><dt>{k}</dt><dd>{v}</dd></div>)}
         </dl>
         <section className="panel"><h2>Recent trades</h2>
-          {!trades.length ? <p className="muted small">No trades recorded yet.</p> : <table className="mini-table"><thead><tr><th>Age</th><th>Side</th><th>HYPE</th><th>Tokens</th><th>Trader</th></tr></thead><tbody>
+          {!trades.length ? <p className="muted small">No trades recorded yet.</p> : <div className="coin-trades-scroll" tabIndex={0} role="region" aria-label="Recent trades table"><table className="mini-table"><caption className="sr-only">Recent indexed trades. Amounts in HYPE and token units.</caption><thead><tr><th scope="col">Age</th><th scope="col">Side</th><th scope="col">HYPE</th><th scope="col">Tokens</th><th scope="col">Trader</th></tr></thead><tbody>
             {trades.map((t) => <tr key={`${t.tx}-${t.t}-${t.trader}`}><td>{age(t.t)}</td><td className={t.side === 'buy' ? 'up' : 'down'}>{t.side}</td><td>{hype(t.amountHype)}</td><td>{hype(t.amountToken)}</td><td>{shortAddr(t.trader)}</td></tr>)}
-          </tbody></table>}
+          </tbody></table></div>}
         </section>
       </div>
       <aside className="coin-right">

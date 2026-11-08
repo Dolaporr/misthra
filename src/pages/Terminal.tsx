@@ -13,7 +13,7 @@ export function SourceBadge({ source }: { source?: string }) {
 export function SafetyIcon({ status }: { status: Launch['safety']['status'] }) {
   const label = { pass: 'Safety checks passed', warn: 'Some safety checks warn or are unknown', fail: 'A safety check failed', unchecked: 'Not checked yet' }[status];
   const Icon = status === 'pass' ? ShieldCheck : status === 'fail' || status === 'warn' ? ShieldAlert : ShieldQuestion;
-  return <span className={`safety-icon ${status}`} title={label} aria-label={label}><Icon size={15} /></span>;
+  return <span className={`safety-icon ${status}`} title={label} role="img" aria-label={label}><Icon size={15} aria-hidden="true" /></span>;
 }
 
 

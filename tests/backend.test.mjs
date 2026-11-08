@@ -211,3 +211,5 @@ test('legacy simulated history cannot become chain balances and can adopt demo m
   assert.equal(state.missions[0].id,f.m.id);
   adopted.locals.close();
 });
+
+test('a page served from its own public host may call the server; other hosts may not',async t=>{const f=await setup(t);const {request}=await import('node:http');const port=new URL(f.origin).port;const hit=(origin,host)=>new Promise((ok,bad)=>{const r=request({host:'127.0.0.1',port,path:'/api/config',headers:{Origin:origin,Host:host}},res=>{res.resume();ok(res.statusCode);});r.on('error',bad);r.end();});assert.equal(await hit('https://misthra-production.up.railway.app','misthra-production.up.railway.app'),200);assert.equal(await hit('https://evil.example','misthra-production.up.railway.app'),403);});

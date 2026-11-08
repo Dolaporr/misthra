@@ -1,0 +1,717 @@
+{
+  "_note": "SIMULATED sample data for UI development only. Names, addresses and numbers are invented. Explorer links use a placeholder host.",
+  "source": "simulated",
+  "indexedBlock": 1070000,
+  "updatedAt": 1794225600000,
+  "pads": [
+    {
+      "id": "citadel",
+      "name": "Citadel",
+      "url": null
+    },
+    {
+      "id": "montra",
+      "name": "Montra",
+      "url": null
+    },
+    {
+      "id": "bunnypad",
+      "name": "BunnyPad",
+      "url": null
+    },
+    {
+      "id": "ascend",
+      "name": "Ascend",
+      "url": null
+    }
+  ],
+  "launches": [
+    {
+      "address": "0x09a67d0e8c54db83ee803ea5b5f5969193b0d022",
+      "name": "Lumen",
+      "symbol": "LUMEN",
+      "decimals": 18,
+      "image": null,
+      "pad": {
+        "id": "citadel",
+        "name": "Citadel",
+        "url": null
+      },
+      "stage": "new",
+      "createdAt": 1794225360000,
+      "createdBlock": 1000000,
+      "creator": "0x985eef11725bd27f85dd95c58f7bebe210795499",
+      "pool": {
+        "address": "0x4a0e73ec0b09d9d26285a83c1e82eecb4744c44d",
+        "venue": "uniswap-v3",
+        "fee": 10000,
+        "quote": "WHYPE"
+      },
+      "priceHype": "0.000000412",
+      "mcapHype": "412",
+      "liquidityHype": "38.2",
+      "volume5mHype": "3.1",
+      "volume24hHype": "18.4",
+      "txCount24h": 41,
+      "traders24h": 19,
+      "holders": 22,
+      "top10Pct": null,
+      "change5mPct": 2.1,
+      "change1hPct": 12.5,
+      "traction": {
+        "score": 35,
+        "up": [],
+        "down": []
+      },
+      "safety": {
+        "status": "unchecked",
+        "checks": [],
+        "checkedAt": null
+      },
+      "ai": null,
+      "router": null,
+      "links": {
+        "explorer": "https://explorer.elysium.example/token/0x09a67d0e8c54db83ee803ea5b5f5969193b0d022",
+        "pad": null,
+        "pool": "https://explorer.elysium.example/address/0x4a0e73ec0b09d9d26285a83c1e82eecb4744c44d"
+      }
+    },
+    {
+      "address": "0xe7c72e5949bdb41cb0ccf109911897f6743264e8",
+      "name": "Kettle",
+      "symbol": "KTL",
+      "decimals": 18,
+      "image": null,
+      "pad": {
+        "id": "montra",
+        "name": "Montra",
+        "url": null
+      },
+      "stage": "new",
+      "createdAt": 1794224940000,
+      "createdBlock": 1007919,
+      "creator": "0xb50c32685739c153ab2a343f8fc6cea7bd3d12fa",
+      "pool": {
+        "address": "0x36ebfdbc8025f07354dc976adacc2821d0678eef",
+        "venue": "uniswap-v3",
+        "fee": 10000,
+        "quote": "WHYPE"
+      },
+      "priceHype": "0.000000096",
+      "mcapHype": "96",
+      "liquidityHype": "12.0",
+      "volume5mHype": "0.4",
+      "volume24hHype": "2.2",
+      "txCount24h": 9,
+      "traders24h": 6,
+      "holders": 7,
+      "top10Pct": null,
+      "change5mPct": -0.7,
+      "change1hPct": -4.1,
+      "traction": {
+        "score": 32,
+        "up": [],
+        "down": [
+          "only 6 traders so far"
+        ]
+      },
+      "safety": {
+        "status": "pass",
+        "checkedAt": 1794225540000,
+        "checks": [
+          {
+            "id": "lp-locked",
+            "label": "Liquidity locked",
+            "result": "pass",
+            "detail": "Pool position held by the pad lock contract"
+          },
+          {
+            "id": "owner",
+            "label": "No owner powers",
+            "result": "pass",
+            "detail": "owner() is the zero address"
+          },
+          {
+            "id": "mint",
+            "label": "No mint function",
+            "result": "pass",
+            "detail": "Runtime code has no mint selector"
+          },
+          {
+            "id": "tax",
+            "label": "Buy/sell tax",
+            "result": "unknown",
+            "detail": "Sell simulation not run yet"
+          }
+        ]
+      },
+      "ai": null,
+      "router": null,
+      "links": {
+        "explorer": "https://explorer.elysium.example/token/0xe7c72e5949bdb41cb0ccf109911897f6743264e8",
+        "pad": null,
+        "pool": "https://explorer.elysium.example/address/0x36ebfdbc8025f07354dc976adacc2821d0678eef"
+      }
+    },
+    {
+      "address": "0xa861ff52805a57768e59fe9395b7cef8bae64394",
+      "name": "Orchard",
+      "symbol": "ORCH",
+      "decimals": 18,
+      "image": null,
+      "pad": {
+        "id": "bunnypad",
+        "name": "BunnyPad",
+        "url": null
+      },
+      "stage": "new",
+      "createdAt": 1794224220000,
+      "createdBlock": 1015838,
+      "creator": "0xd9655bb7f5573cf40a30f9fce2f1f32fd577e805",
+      "pool": {
+        "address": "0xa6de31d1f43759fe3e37649e9409a275763854b9",
+        "venue": "uniswap-v3",
+        "fee": 10000,
+        "quote": "WHYPE"
+      },
+      "priceHype": "0.000000233",
+      "mcapHype": "233",
+      "liquidityHype": "25.5",
+      "volume5mHype": "1.2",
+      "volume24hHype": "9.9",
+      "txCount24h": 22,
+      "traders24h": 12,
+      "holders": 15,
+      "top10Pct": null,
+      "change5mPct": 0.5,
+      "change1hPct": 3.3,
+      "traction": {
+        "score": 33,
+        "up": [],
+        "down": []
+      },
+      "safety": {
+        "status": "pass",
+        "checkedAt": 1794225540000,
+        "checks": [
+          {
+            "id": "lp-locked",
+            "label": "Liquidity locked",
+            "result": "pass",
+            "detail": "Pool position held by the pad lock contract"
+          },
+          {
+            "id": "owner",
+            "label": "No owner powers",
+            "result": "pass",
+            "detail": "owner() is the zero address"
+          },
+          {
+            "id": "mint",
+            "label": "No mint function",
+            "result": "pass",
+            "detail": "Runtime code has no mint selector"
+          },
+          {
+            "id": "tax",
+            "label": "Buy/sell tax",
+            "result": "unknown",
+            "detail": "Sell simulation not run yet"
+          }
+        ]
+      },
+      "ai": null,
+      "router": null,
+      "links": {
+        "explorer": "https://explorer.elysium.example/token/0xa861ff52805a57768e59fe9395b7cef8bae64394",
+        "pad": null,
+        "pool": "https://explorer.elysium.example/address/0xa6de31d1f43759fe3e37649e9409a275763854b9"
+      }
+    },
+    {
+      "address": "0xcc0e128f2acbca7a5711ce8c658b09c297644a3b",
+      "name": "Glasswing Cat",
+      "symbol": "GCAT",
+      "decimals": 18,
+      "image": null,
+      "pad": {
+        "id": "ascend",
+        "name": "Ascend",
+        "url": null
+      },
+      "stage": "new",
+      "createdAt": 1794225480000,
+      "createdBlock": 1023757,
+      "creator": "0xf46c3dafbaf7b22c5962064af040f13824567c8b",
+      "pool": {
+        "address": "0x9d937dad14f7521cef7fd5ce6690922f47a5999b",
+        "venue": "uniswap-v3",
+        "fee": 10000,
+        "quote": "WHYPE"
+      },
+      "priceHype": "0.000000051",
+      "mcapHype": "51",
+      "liquidityHype": "8.1",
+      "volume5mHype": "0.2",
+      "volume24hHype": "0.9",
+      "txCount24h": 4,
+      "traders24h": 3,
+      "holders": 3,
+      "top10Pct": null,
+      "change5mPct": null,
+      "change1hPct": null,
+      "traction": null,
+      "safety": {
+        "status": "unchecked",
+        "checks": [],
+        "checkedAt": null
+      },
+      "ai": null,
+      "router": null,
+      "links": {
+        "explorer": "https://explorer.elysium.example/token/0xcc0e128f2acbca7a5711ce8c658b09c297644a3b",
+        "pad": null,
+        "pool": "https://explorer.elysium.example/address/0x9d937dad14f7521cef7fd5ce6690922f47a5999b"
+      }
+    },
+    {
+      "address": "0x926db38800519cb517a3277921d2f57aeb75452b",
+      "name": "Paper Moth",
+      "symbol": "MOTH",
+      "decimals": 18,
+      "image": null,
+      "pad": {
+        "id": "citadel",
+        "name": "Citadel",
+        "url": null
+      },
+      "stage": "stretch",
+      "createdAt": 1794219900000,
+      "createdBlock": 1031676,
+      "creator": "0x79a776fe1e4cc8250507a0a1d55da0262177f81e",
+      "pool": {
+        "address": "0xe746792cdfe55f0665485691efd0ed725fdde50a",
+        "venue": "uniswap-v3",
+        "fee": 10000,
+        "quote": "WHYPE"
+      },
+      "priceHype": "0.0000031",
+      "mcapHype": "3100",
+      "liquidityHype": "210.4",
+      "volume5mHype": "14.8",
+      "volume24hHype": "388.0",
+      "txCount24h": 312,
+      "traders24h": 141,
+      "holders": 188,
+      "top10Pct": 22.4,
+      "change5mPct": 6.8,
+      "change1hPct": 41,
+      "traction": {
+        "score": 65,
+        "up": [
+          "141 different traders"
+        ],
+        "down": []
+      },
+      "safety": {
+        "status": "pass",
+        "checkedAt": 1794225540000,
+        "checks": [
+          {
+            "id": "lp-locked",
+            "label": "Liquidity locked",
+            "result": "pass",
+            "detail": "Pool position held by the pad lock contract"
+          },
+          {
+            "id": "owner",
+            "label": "No owner powers",
+            "result": "pass",
+            "detail": "owner() is the zero address"
+          },
+          {
+            "id": "mint",
+            "label": "No mint function",
+            "result": "pass",
+            "detail": "Runtime code has no mint selector"
+          },
+          {
+            "id": "tax",
+            "label": "Buy/sell tax",
+            "result": "unknown",
+            "detail": "Sell simulation not run yet"
+          }
+        ]
+      },
+      "ai": {
+        "grade": "B",
+        "verdict": "watch",
+        "summary": "Simulated read for MOTH.",
+        "thesis": "Sample thesis text for layout only.",
+        "risks": [
+          "Sample risk for layout only."
+        ],
+        "model": "simulated",
+        "readAt": 1794225480000
+      },
+      "router": null,
+      "links": {
+        "explorer": "https://explorer.elysium.example/token/0x926db38800519cb517a3277921d2f57aeb75452b",
+        "pad": null,
+        "pool": "https://explorer.elysium.example/address/0xe746792cdfe55f0665485691efd0ed725fdde50a"
+      }
+    },
+    {
+      "address": "0xbe51aa868a5d74ffff66e9a4ec99d1055f001a29",
+      "name": "Veridian",
+      "symbol": "VRD",
+      "decimals": 18,
+      "image": null,
+      "pad": {
+        "id": "montra",
+        "name": "Montra",
+        "url": null
+      },
+      "stage": "stretch",
+      "createdAt": 1794214800000,
+      "createdBlock": 1039595,
+      "creator": "0x657d35cfc9c2787a0ea37c46c6e1558ed8d763e0",
+      "pool": {
+        "address": "0x64938742162386c065ac7e521839be3966380407",
+        "venue": "uniswap-v3",
+        "fee": 10000,
+        "quote": "WHYPE"
+      },
+      "priceHype": "0.0000019",
+      "mcapHype": "1900",
+      "liquidityHype": "144.0",
+      "volume5mHype": "6.0",
+      "volume24hHype": "171.5",
+      "txCount24h": 201,
+      "traders24h": 96,
+      "holders": 77,
+      "top10Pct": 18.9,
+      "change5mPct": -1,
+      "change1hPct": -6.2,
+      "traction": {
+        "score": 54,
+        "up": [
+          "96 different traders"
+        ],
+        "down": []
+      },
+      "safety": {
+        "status": "pass",
+        "checkedAt": 1794225540000,
+        "checks": [
+          {
+            "id": "lp-locked",
+            "label": "Liquidity locked",
+            "result": "pass",
+            "detail": "Pool position held by the pad lock contract"
+          },
+          {
+            "id": "owner",
+            "label": "No owner powers",
+            "result": "pass",
+            "detail": "owner() is the zero address"
+          },
+          {
+            "id": "mint",
+            "label": "No mint function",
+            "result": "pass",
+            "detail": "Runtime code has no mint selector"
+          },
+          {
+            "id": "tax",
+            "label": "Buy/sell tax",
+            "result": "unknown",
+            "detail": "Sell simulation not run yet"
+          }
+        ]
+      },
+      "ai": {
+        "grade": "C",
+        "verdict": "watch",
+        "summary": "Simulated read for VRD.",
+        "thesis": "Sample thesis text for layout only.",
+        "risks": [
+          "Sample risk for layout only."
+        ],
+        "model": "simulated",
+        "readAt": 1794225480000
+      },
+      "router": null,
+      "links": {
+        "explorer": "https://explorer.elysium.example/token/0xbe51aa868a5d74ffff66e9a4ec99d1055f001a29",
+        "pad": null,
+        "pool": "https://explorer.elysium.example/address/0x64938742162386c065ac7e521839be3966380407"
+      }
+    },
+    {
+      "address": "0xed005eee448118ec3942b8fd71ddb38ae43134fd",
+      "name": "Halcyon",
+      "symbol": "HLCN",
+      "decimals": 18,
+      "image": null,
+      "pad": {
+        "id": "ascend",
+        "name": "Ascend",
+        "url": null
+      },
+      "stage": "stretch",
+      "createdAt": 1794211200000,
+      "createdBlock": 1047514,
+      "creator": "0xd4259a44aec1fdb12714b3413963a97cb77398f0",
+      "pool": {
+        "address": "0x0ce221c08bb3c43065806c4adf465fe8054bd314",
+        "venue": "uniswap-v3",
+        "fee": 10000,
+        "quote": "WHYPE"
+      },
+      "priceHype": "0.0000044",
+      "mcapHype": "4400",
+      "liquidityHype": "301.7",
+      "volume5mHype": "22.9",
+      "volume24hHype": "642.3",
+      "txCount24h": 540,
+      "traders24h": 233,
+      "holders": 260,
+      "top10Pct": 15.1,
+      "change5mPct": 1.5,
+      "change1hPct": 8.8,
+      "traction": {
+        "score": 88,
+        "up": [
+          "233 different traders"
+        ],
+        "down": []
+      },
+      "safety": {
+        "status": "pass",
+        "checkedAt": 1794225540000,
+        "checks": [
+          {
+            "id": "lp-locked",
+            "label": "Liquidity locked",
+            "result": "pass",
+            "detail": "Pool position held by the pad lock contract"
+          },
+          {
+            "id": "owner",
+            "label": "No owner powers",
+            "result": "pass",
+            "detail": "owner() is the zero address"
+          },
+          {
+            "id": "mint",
+            "label": "No mint function",
+            "result": "pass",
+            "detail": "Runtime code has no mint selector"
+          },
+          {
+            "id": "tax",
+            "label": "Buy/sell tax",
+            "result": "unknown",
+            "detail": "Sell simulation not run yet"
+          }
+        ]
+      },
+      "ai": {
+        "grade": "A",
+        "verdict": "buy",
+        "summary": "Simulated read for HLCN.",
+        "thesis": "Sample thesis text for layout only.",
+        "risks": [
+          "Sample risk for layout only."
+        ],
+        "model": "simulated",
+        "readAt": 1794225480000
+      },
+      "router": {
+        "address": "0xb1aa81306128a0dc9b782556aa054917c98d5992",
+        "buckets": [
+          {
+            "label": "Creator wallets",
+            "bps": 5000
+          },
+          {
+            "label": "Buyback and burn",
+            "bps": 3000
+          },
+          {
+            "label": "Native HYPE to team",
+            "bps": 2000
+          }
+        ]
+      },
+      "links": {
+        "explorer": "https://explorer.elysium.example/token/0xed005eee448118ec3942b8fd71ddb38ae43134fd",
+        "pad": null,
+        "pool": "https://explorer.elysium.example/address/0x0ce221c08bb3c43065806c4adf465fe8054bd314"
+      }
+    },
+    {
+      "address": "0x91ef8e81758d5fad6df62a2c2b8772ef5072b1d9",
+      "name": "Nimbus",
+      "symbol": "NMB",
+      "decimals": 18,
+      "image": null,
+      "pad": {
+        "id": "citadel",
+        "name": "Citadel",
+        "url": null
+      },
+      "stage": "migrated",
+      "createdAt": 1794052800000,
+      "createdBlock": 1055433,
+      "creator": "0xbdc2bc0971049ab60b92831207c7e979ce8b79db",
+      "pool": {
+        "address": "0xefae79bbb3a68a657da5b0bad83bdd24c3d0d233",
+        "venue": "uniswap-v3",
+        "fee": 10000,
+        "quote": "WHYPE"
+      },
+      "priceHype": "0.000021",
+      "mcapHype": "21000",
+      "liquidityHype": "1800.0",
+      "volume5mHype": "40.2",
+      "volume24hHype": "5120.0",
+      "txCount24h": 2900,
+      "traders24h": 1104,
+      "holders": 1730,
+      "top10Pct": 11,
+      "change5mPct": 0.4,
+      "change1hPct": 2.1,
+      "traction": {
+        "score": 95,
+        "up": [
+          "1104 different traders"
+        ],
+        "down": []
+      },
+      "safety": {
+        "status": "pass",
+        "checkedAt": 1794225540000,
+        "checks": [
+          {
+            "id": "lp-locked",
+            "label": "Liquidity locked",
+            "result": "pass",
+            "detail": "Pool position held by the pad lock contract"
+          },
+          {
+            "id": "owner",
+            "label": "No owner powers",
+            "result": "pass",
+            "detail": "owner() is the zero address"
+          },
+          {
+            "id": "mint",
+            "label": "No mint function",
+            "result": "pass",
+            "detail": "Runtime code has no mint selector"
+          },
+          {
+            "id": "tax",
+            "label": "Buy/sell tax",
+            "result": "unknown",
+            "detail": "Sell simulation not run yet"
+          }
+        ]
+      },
+      "ai": {
+        "grade": "B",
+        "verdict": "watch",
+        "summary": "Simulated read for NMB.",
+        "thesis": "Sample thesis text for layout only.",
+        "risks": [
+          "Sample risk for layout only."
+        ],
+        "model": "simulated",
+        "readAt": 1794225480000
+      },
+      "router": null,
+      "links": {
+        "explorer": "https://explorer.elysium.example/token/0x91ef8e81758d5fad6df62a2c2b8772ef5072b1d9",
+        "pad": null,
+        "pool": "https://explorer.elysium.example/address/0xefae79bbb3a68a657da5b0bad83bdd24c3d0d233"
+      }
+    },
+    {
+      "address": "0xe94c0dffa6828003c457e7da50eeabda6bcea95c",
+      "name": "Rustwire",
+      "symbol": "RUST",
+      "decimals": 18,
+      "image": null,
+      "pad": {
+        "id": "bunnypad",
+        "name": "BunnyPad",
+        "url": null
+      },
+      "stage": "stretch",
+      "createdAt": 1794217800000,
+      "createdBlock": 1063352,
+      "creator": "0x1f492c913c4e214b5bf108798c292ddda859cafe",
+      "pool": {
+        "address": "0x5aa45730943880a5b0cf78fc8441e6495b9de7d6",
+        "venue": "uniswap-v3",
+        "fee": 10000,
+        "quote": "WHYPE"
+      },
+      "priceHype": "0.0000012",
+      "mcapHype": "1200",
+      "liquidityHype": "61.0",
+      "volume5mHype": "2.0",
+      "volume24hHype": "92.0",
+      "txCount24h": 130,
+      "traders24h": 58,
+      "holders": 40,
+      "top10Pct": 61,
+      "change5mPct": -5.2,
+      "change1hPct": -31,
+      "traction": {
+        "score": 45,
+        "up": [
+          "58 different traders"
+        ],
+        "down": []
+      },
+      "safety": {
+        "status": "fail",
+        "checkedAt": 1794225540000,
+        "checks": [
+          {
+            "id": "owner",
+            "label": "No owner powers",
+            "result": "fail",
+            "detail": "Owner can change the transfer tax"
+          },
+          {
+            "id": "concentration",
+            "label": "Holder concentration",
+            "result": "warn",
+            "detail": "Top 10 hold 61% of supply"
+          }
+        ]
+      },
+      "ai": {
+        "grade": "D",
+        "verdict": "avoid",
+        "summary": "Simulated read for RUST.",
+        "thesis": "Sample thesis text for layout only.",
+        "risks": [
+          "Sample risk for layout only."
+        ],
+        "model": "simulated",
+        "readAt": 1794225480000
+      },
+      "router": null,
+      "links": {
+        "explorer": "https://explorer.elysium.example/token/0xe94c0dffa6828003c457e7da50eeabda6bcea95c",
+        "pad": null,
+        "pool": "https://explorer.elysium.example/address/0x5aa45730943880a5b0cf78fc8441e6495b9de7d6"
+      }
+    }
+  ]
+}

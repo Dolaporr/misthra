@@ -6,6 +6,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname, extname } from 'node:path';
 import { verifyMessage, isAddress } from 'ethers';
 import { z } from 'zod';
+import { setupTerminal } from './terminal/index.mjs';
 
 const UNIT=10n**18n, HOUR=3600000, DAY=24*HOUR;
 export const DEMO_POSTER='0x1111111111111111111111111111111111111111';
@@ -24,7 +25,7 @@ const bodySchema=z.object({text:txt(30000,0).optional(),link:z.string().max(2048
 const actionSchema=bodySchema.extend({action:z.enum(['claim','submit','accept','reject','revise','cancel','raise','finalize','pick','confirm']),tip:z.string().optional(),amount:z.string().optional(),entryId:z.string().max(100).optional(),note:txt(3000,0).optional()});
 const parse=(schema,body)=>{const result=schema.safeParse(body);if(!result.success)fail(400,result.error.issues.map(i=>`${i.path.join('.')}: ${i.message}`).join('; '));return result.data;};
 
-export function createApp({dbPath='data/errand.sqlite',mode='demo',now=()=>Date.now(),seed=true}={}) {
+export function createApp({dbPath='data/errand.sqlite',mode='demo',now=()=>Date.now(),seed=true,elysium,elysiumProvider=null,terminalStart=false,log=()=>{}}={}) {
   if(!['demo','chain'].includes(mode))throw new Error('Unknown execution mode');
   if(dbPath!==':memory:')mkdirSync(dirname(dbPath),{recursive:true});
   const db=new DatabaseSync(dbPath);db.exec('PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000; CREATE TABLE IF NOT EXISTS state (id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL); CREATE TABLE IF NOT EXISTS uploads (id TEXT PRIMARY KEY, owner TEXT NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, size INTEGER NOT NULL, bytes BLOB NOT NULL)');
@@ -77,10 +78,14 @@ export function createApp({dbPath='data/errand.sqlite',mode='demo',now=()=>Date.
   const authenticate=req=>{let token=req.headers.authorization?.match(/^Bearer ([A-Za-z0-9_-]+)$/)?.[1];if(!token){const cookie=req.headers.cookie?.split(';').map(s=>s.trim()).find(s=>s.startsWith('errand_session='));token=cookie?.slice(15);}const session=token&&state.sessions[hash(token)];if(!session||session.expiresAt<=time())fail(401,'Sign in to continue');return {...session,tokenHash:hash(token)};};
   const getAuth=req=>{state=read();return authenticate(req);};
   const session=(res,a,role)=>{ensureAccount(a);const token=randomBytes(32).toString('base64url');state.sessions[hash(token)]={address:a,role,expiresAt:time()+7*DAY};res.cookie('errand_session',token,{httpOnly:true,sameSite:'lax',secure:process.env.APP_ORIGIN?.startsWith('https://')||false,maxAge:7*DAY,path:'/'});return {address:a,token,role};};
-  const app=express();app.disable('x-powered-by');app.locals.close=()=>db.close();app.locals.snapshot=read;
-  const appOrigin=process.env.APP_ORIGIN||'http://127.0.0.1:5173';
-  const origins=new Set([appOrigin,'http://localhost:5173','http://127.0.0.1:5173','http://localhost:4317','http://127.0.0.1:4317']);
-  app.use((req,res,next)=>{const origin=req.headers.origin;const host=req.headers.host||'';const self=/^(127\.0\.0\.1|localhost):\d+$/.test(host)?`http://${host}`:null;if(origin&&!origins.has(origin)&&origin!==self)return res.status(403).json({error:'Origin is not permitted'});if(origin){res.set('Access-Control-Allow-Origin',origin);res.set('Access-Control-Allow-Credentials','true');res.vary('Origin');}res.set('X-Content-Type-Options','nosniff');res.set('Referrer-Policy','same-origin');if(req.method==='OPTIONS'){res.set('Access-Control-Allow-Headers','Content-Type, Authorization');res.set('Access-Control-Allow-Methods','GET, POST, OPTIONS');return res.sendStatus(204);}next();});
+  const app=express();app.disable('x-powered-by');app.locals.close=()=>{app.locals.terminal?.close();db.close();};app.locals.snapshot=read;
+  // APP_ORIGIN may list several origins, comma-separated (e.g. https://misthra.com,https://www.misthra.com).
+  const appOrigins=(process.env.APP_ORIGIN||'http://127.0.0.1:5173').split(',').map(o=>o.trim().replace(/\/+$/,'')).filter(Boolean);
+  const appOrigin=appOrigins[0];
+  const origins=new Set([...appOrigins,'http://localhost:5173','http://127.0.0.1:5173','http://localhost:4317','http://127.0.0.1:4317']);
+  // A page served by this server is always allowed to call it: same host as the request.
+  const sameHost=(origin,host)=>{try{return !!host&&new URL(origin).host===host;}catch{return false;}};
+  app.use((req,res,next)=>{const origin=req.headers.origin;const host=req.headers.host||'';if(origin&&!origins.has(origin)&&!sameHost(origin,host))return res.status(403).json({error:'Origin is not permitted'});if(origin){res.set('Access-Control-Allow-Origin',origin);res.set('Access-Control-Allow-Credentials','true');res.vary('Origin');}res.set('X-Content-Type-Options','nosniff');res.set('Referrer-Policy','same-origin');if(req.method==='OPTIONS'){res.set('Access-Control-Allow-Headers','Content-Type, Authorization');res.set('Access-Control-Allow-Methods','GET, POST, OPTIONS');return res.sendStatus(204);}next();});
   app.use(express.json({limit:'128kb'}));
   const limited=new Map();const limit=(key,max=30)=>{const timestamp=time();let value=limited.get(key);if(!value||timestamp-value.at>60000){value={at:timestamp,count:0};limited.set(key,value);}if(++value.count>max)fail(429,'Too many requests; try again shortly');if(limited.size>5000)limited.clear();};
   const route=(method,path,fn)=>app[method](path,(req,res,next)=>{try{state=read();res.json(fn(req,res));}catch(e){next(e);}});
@@ -134,7 +139,7 @@ export function createApp({dbPath='data/errand.sqlite',mode='demo',now=()=>Date.
       else if(b.length>=16&&b.subarray(0,4).equals(Buffer.from([26,69,223,163]))&&b.includes(Buffer.from('webm'))&&ext==='.webm')type='video/webm';
       if(!type||f.mimetype!==type)fail(400,'Unsupported file or file contents do not match its type');if(type.startsWith('image/')&&b.length>1_500_000)fail(400,'Images must be at most 1.5MB');const key=id(),name=f.originalname.replace(/[^a-zA-Z0-9._ -]/g,'_').slice(0,120);db.prepare('INSERT INTO uploads(id,owner,name,type,size,bytes) VALUES(?,?,?,?,?,?)').run(key,actor,name,type,b.length,b);res.json({url:`/api/uploads/${key}`,name,type,size:b.length});}catch(error){next(error);}});});
   app.get('/api/uploads/:id',(req,res,next)=>{try{const f=db.prepare('SELECT name,type,bytes FROM uploads WHERE id=?').get(req.params.id);if(!f)fail(404,'File not found');res.set('Content-Type',f.type);res.set('Content-Security-Policy',"default-src 'none'");res.set('Content-Disposition',`inline; filename="${f.name.replace(/"/g,'_')}"`);res.send(Buffer.from(f.bytes));}catch(e){next(e);}});
-  app.use('/api',(req,res)=>res.status(404).json({error:'API route not found'}));
+  const terminal=setupTerminal(app,{db,now,auth:req=>{state=read();return authenticate(req);},config:elysium,provider:elysiumProvider,start:terminalStart,log});app.locals.terminal=terminal;app.use('/api',(req,res)=>res.status(404).json({error:'API route not found'}));
   app.use((error,req,res,next)=>{if(res.headersSent)return next(error);const status=error.status||((error.type==='entity.too.large')?413:500);if(status>=500)console.error(error);res.status(status).json({error:status>=500?'The service could not complete this request':error.message});});
   return app;
 }

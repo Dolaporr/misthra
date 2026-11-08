@@ -1,10 +1,7 @@
-export function MisthraMark({className=''}:{className?:string}) {
-  return <svg className={`misthra-mark ${className}`} viewBox="0 0 40 36" fill="none" aria-hidden="true">
-    <path pathLength="1" d="M3 30V9c0-4.5 4.7-6 7.2-2.2L20 22" />
-    <path pathLength="1" d="M37 30V9c0-4.5-4.7-6-7.2-2.2L20 22" />
-  </svg>;
-}
+import './brand.css';
+
+export const BRAND = { name: 'Misthra', wordmark: 'misthra', descriptor: 'Fee control for Elysium launches.' } as const;
 
 export function Brand() {
-  return <><MisthraMark/><span className="brand-name">misthra</span></>;
+  return <img className="misthra-logo" src="/brand/misthra-logo.svg" alt={BRAND.name} width={158} height={32}/>;
 }

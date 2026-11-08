@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-1 12 737 150" fill="none">
+  <title>Misthra — Offset exchange</title>
+  <g transform="translate(0 38) scale(1.2157)" fill="#eef1f7">
+    <path d="M43,0A43,43 0 0 0 43,86V60A17,17 0 0 1 43,26Z"/>
+    <path d="M57,16A43,43 0 0 1 57,102V76A17,17 0 0 0 57,42Z"/>
+  </g>
+  <g transform="translate(163.57 0)" stroke="#eef1f7" stroke-width="14" stroke-linecap="butt" stroke-linejoin="miter">
+    <path d="M6.5,60V160M6.5,94.5A28,28 0 0 1 62.5,94.5V160M62.5,94.5A28,28 0 0 1 118.5,94.5V160"/>
+    <path transform="translate(147 0)" d="M6.5,60V160"/>
+    <path transform="translate(175 0)" d="M55.62,75.77A27,21.75 0 1 0 33.5,110A27,21.75 0 1 1 11.38,144.23"/>
+    <path transform="translate(251 0)" d="M22.5,26V134A19.5,19.5 0 0 0 42,153.5M0,66.5H46"/>
+    <path transform="translate(314 0)" d="M6.5,12V160M6.5,96.5A30,30 0 0 1 66.5,96.5V160"/>
+    <path transform="translate(409 0)" d="M6.5,60V160M6.5,96.5A30,30 0 0 1 36.5,66.5H49"/>
+    <path transform="translate(471 0)" d="M93.5,60V160M93.5,110A43.5,43.5 0 1 1 6.5,110A43.5,43.5 0 1 1 93.5,110"/>
+    <rect x="146" y="15" width="15" height="15" fill="#eef1f7" stroke="none"/>
+  </g>
+</svg>

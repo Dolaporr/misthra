@@ -134,6 +134,19 @@
 .is-home .film-control button:focus-visible{outline-color:#7fa8ff}
 
 /* A framed, turning backdrop carries through the page rather than a cropped block. */
+.home-feature-content{min-height:340px}
+.home-feature-content>p{font-size:15px;font-weight:400;line-height:1.8;color:#b6c0d4;max-width:40ch;margin:0;min-height:82px}
+.home-feature-controls{display:flex;gap:16px;align-items:center;margin-top:26px;flex-wrap:wrap}
+.home-feature-options{display:flex;gap:18px;align-items:center}
+.home-feature-options button{display:flex;gap:7px;align-items:center;color:#b3c1d8;font-size:11px;min-height:44px;transition:color .2s}
+.home-feature-options button:hover,.home-feature-options button[aria-pressed=true]{color:#e7f0ff}
+.home-feature-indicator{width:5px;height:5px;border-radius:50%;background:#59677f;transition:background .2s,width .2s}
+.home-feature-options [aria-pressed=true] .home-feature-indicator{width:17px;border-radius:4px;background:#91b4ff}
+.home-feature-pause{display:inline-flex;gap:6px;align-items:center;min-height:44px;font-size:10px;color:#b7c6df;padding:0 8px}
+.home-feature-pause:disabled{opacity:.8;cursor:default}
+@media(max-width:1100px){.home-feature-content{min-height:322px}.home-feature-content>p{font-size:13px;min-height:92px;max-width:38ch}.home-feature-controls{gap:10px}}
+@media(max-width:760px){.home-feature-content{min-height:308px}.home-feature-content>p{font-size:13px;max-width:39ch;min-height:94px}.home-feature-content .landing-actions{flex-wrap:wrap;gap:8px 20px;margin-top:22px;min-height:102px;align-content:flex-start}.home-feature-content .landing-secondary{min-height:44px}.home-feature-controls{margin-top:14px;gap:10px}.home-feature-options{gap:14px}.home-feature-options button{font-size:10px;gap:6px}.home-feature-pause{font-size:9px}.home-feature-copy.landing-copy{padding-bottom:110px}.home-feature-content h1{font-size:clamp(32px,10vw,65px)}}
+@media(prefers-reduced-motion:reduce){.home-feature-indicator,.home-feature-options button{transition:none}}
 .landing-page{position:relative;isolation:isolate}
 .landing-scene{background:transparent;isolation:auto}
 .agent-stage{position:fixed;inset:28px 0 0;height:calc(100svh - 28px);z-index:-1}
@@ -156,7 +169,9 @@
  .agent-stage .agent-poster,.agent-stage .agent-video{inset:auto;top:50%;right:-5vw;left:auto;width:180vw;max-width:none;height:auto;aspect-ratio:16/9;object-fit:contain;object-position:center;transform:translateY(-50%)}
  .landing-story .landing-hero{min-height:620px;background:transparent}
  .landing-copy{padding:150px 6% 125px}
- .hero-colophon{bottom:17px;min-height:45px;max-width:52%}
+ .hero-colophon{bottom:17px;min-height:45px;left:6%;right:6%;max-width:none;width:auto;justify-content:space-between;gap:14px}
+ .hero-colophon p{max-width:23ch;flex:0 1 45%;line-height:1.7}
+ .hero-colophon .home-section-link{font-size:10px;flex-shrink:0;gap:8px}
  .landing-story .landing-work{background:rgba(12,15,22,.82);border-top:1px solid rgba(143,164,200,.12);padding-top:42px}
  .agent-stage .film-control{position:fixed;top:auto;bottom:15px;right:5%;z-index:4}
  .agent-stage .film-control button{background:#111a2df2;padding:0 10px;border:1px solid #35435e;font-size:10px}

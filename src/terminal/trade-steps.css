@@ -12,3 +12,19 @@
 .trade-progress{font-size:12px;color:#bdcde5;line-height:1.8;margin:15px 0}
 .trade-panel .quote dd{overflow-wrap:anywhere}
 .trade-panel .button.full{white-space:normal;min-height:44px;line-height:1.5}
+.trade-panel-heading{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+.trade-panel-heading h2{font-size:15px;margin:0;line-height:1.4}
+.trade-unavailable{padding:18px 0;color:#bcd0ef}
+.trade-unavailable>svg{color:#a4c3ff;margin-bottom:10px}
+.trade-unavailable p{font-size:13px;line-height:1.8;margin:0 0 18px}
+.trade-unavailable .button{gap:10px;margin-bottom:18px}
+.trade-paper-note{font-size:11px;line-height:1.8;color:#bfd2f4;margin-bottom:20px}
+.pool-venue{display:inline-flex;align-items:center;gap:5px;font-size:10px;color:#bdcce4;white-space:nowrap}
+.venue-version{font-size:9px;line-height:1.5;background:#263044;color:#c8daf6;border-radius:4px;padding:1px 5px}
+.venue-version.v4{background:#2d2a43;color:#dccfff}
+.pool-quote{font-size:9px;color:#acbdd8}
+.coin-fee-recipient,.coin-pool-id{display:flex;align-items:center;flex-wrap:wrap;gap:7px;font-size:11px;line-height:1.7;color:#b8cae7;margin:8px 0 0}
+.coin-fee-recipient a{display:inline-flex;gap:6px;align-items:center;color:#b9d0ff;text-decoration:underline;text-underline-offset:3px}
+.coin-pool-id code{font-size:10px;color:#c4d1e8}
+.coin-pool-id .copy{min-height:32px;font-size:10px}
+.source-badge.unavailable{color:#d9c9a8;background:#292621}

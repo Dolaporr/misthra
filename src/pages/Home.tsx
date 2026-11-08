@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { ArrowDown, ArrowRight, ArrowUpRight, Pause, Play } from 'lucide-react';
 import {scrollVideoProgress,scrollVideoTime,videoUnavailable} from '../lib/scroll-video';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { HomeFeatures } from '../components/HomeFeatures';
 
 const poster='/media/misthra-agent-dark-poster.jpg';
 
@@ -67,14 +68,10 @@ export function Home() {
   const sceneRef=useRef<HTMLDivElement>(null);
   return <div className="landing-page">
     <div className="landing-scene" ref={sceneRef}><AgentFilm sceneRef={sceneRef}/><div className="landing-story">
-      <section className="landing-hero" aria-labelledby="landing-title"><div className="landing-copy">
-        <h1 id="landing-title">{['Control where','launch fees go.'].map((line,index)=><motion.span key={line} initial={reduce?false:{clipPath:'inset(0 0 100% 0)',y:14}} animate={{clipPath:'inset(0 0 0% 0)',y:0}} transition={{duration:.65,delay:.08+index*.09,ease:[.16,1,.3,1]}}>{line}</motion.span>)}</h1>
-        <motion.p initial={reduce?false:{opacity:.45}} animate={{opacity:1}} transition={{duration:.5,delay:.24}}>A fee router sends your launch’s fees to wallets or buyback-and-burn, using the split you set.</motion.p>
-        <motion.div className="landing-actions" initial={reduce?false:{opacity:.5,y:6}} animate={{opacity:1,y:0}} transition={{duration:.4,delay:.32}}><a className="landing-primary" href="#/launch">Set up a fee router <ArrowUpRight size={18}/></a><a className="landing-secondary" href="#/terminal">Open the terminal <ArrowRight size={17}/></a></motion.div>
-      </div><div className="hero-colophon"><p>Fee control for Elysium launches.</p><button className="home-section-link" onClick={()=>{const section=document.getElementById('sections');section?.scrollIntoView({behavior:reduce?'auto':'smooth'});section?.focus({preventScroll:true})}}>See how it works <ArrowDown size={15}/></button></div></section>
+      <section className="landing-hero" aria-labelledby="landing-title"><HomeFeatures/><div className="hero-colophon"><p>Fee control for Elysium launches.</p><button className="home-section-link" onClick={()=>{const section=document.getElementById('sections');section?.scrollIntoView({behavior:reduce?'auto':'smooth'});section?.focus({preventScroll:true})}}>See how it works <ArrowDown size={15}/></button></div></section>
       <section className="landing-work home-router-steps" id="sections" tabIndex={-1} aria-labelledby="sections-title"><div className="landing-section-heading"><div><h2 id="sections-title">Set the split.<br/>Keep the rules clear.</h2><p>A fixed 1% protocol fee is taken first. Your rules distribute the remaining fees.</p></div></div>
         <div className="landing-missions">{[
-          ['Choose the split','Send fees to creator or team wallets, unwrap them to native HYPE, or use a guarded buyback-and-burn.'],
+          ['Choose the split','Pay creator or team wallets in HYPE or WHYPE, or use a guarded buyback-and-burn.'],
           ['Review the plan','Check the shares, wallet addresses and deployment steps before asking your wallet to sign.'],
           ['Connect your launch','Use the router as your launchpad’s fee recipient, where custom fee recipients are supported.'],
         ].map(([title,text])=><a className="mission-preview-row home-route-row" key={title} href="#/launch"><div><h3>{title}</h3><p>{text}</p></div><ArrowUpRight className="preview-arrow" size={19}/></a>)}</div>

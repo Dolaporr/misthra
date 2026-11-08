@@ -66,4 +66,4 @@ npm run contracts:compile    # solc 0.8.28 for the router; pins its codehash
 npm run build                # typecheck + Vite build
 ```
 
-Design system: `DESIGN.md` (charcoal `#0c0f16`, silver `#eef1f7`, blue `#7fa8ff` / `#315bd5`, Manrope headings, Inter body, joining-path M). Keep it.
+Design system: `DESIGN.md` (charcoal `#0c0f16`, silver `#eef1f7`, blue `#7fa8ff` / `#315bd5`, Manrope headings, Inter body). Keep it. Branding exception approved by the owner on 2026-11-08: use concept B, “Offset exchange,” with its two offset half-rings and outlined Misthra wordmark; shared assets are in `public/brand/`.

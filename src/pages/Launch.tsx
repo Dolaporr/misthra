@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { RouterLookup } from './RouterStatus';
 import { Copy, Flame, Plus, Trash2, Wallet as WalletIcon, Coins } from 'lucide-react';
 import { post } from '../api';
 import { useApp } from '../state';
@@ -103,5 +104,6 @@ export function Launch() {
         </div>}
       </li>
     </ol>
+    <RouterLookup/>
   </div>;
 }

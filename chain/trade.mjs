@@ -1,7 +1,7 @@
 // Quotes and unsigned trades on Elysium. Every live trade goes through
 // MisthraTradeGateway, which takes the fixed platform fee in HYPE and calls
 // Uniswap's SwapRouter02 in the same transaction. The server never signs.
-import { Interface, MaxUint256, formatUnits, parseUnits } from 'ethers';
+import { Interface, formatUnits, parseUnits } from 'ethers';
 
 const quoter = new Interface(['function quoteExactInputSingle((address tokenIn,address tokenOut,uint256 amountIn,uint24 fee,uint160 sqrtPriceLimitX96)) returns (uint256 amountOut,uint160,uint32,uint256)']);
 export const gatewayAbi = [
@@ -24,6 +24,9 @@ async function onchainFeeBps(provider, config) {
   return cachedFee;
 }
 
+export const QUOTE_TTL_S = 120;          // on-chain deadline
+export const QUOTE_REFRESH_MS = 20_000;  // re-quote after this
+
 export async function liveQuote(provider, config, { token, side, amount, slippageBps, wallet, fee: poolFee, decimals = 18, now = Date.now() }) {
   const buy = side === 'buy';
   const feeBps = await onchainFeeBps(provider, config);
@@ -45,19 +48,30 @@ export async function liveQuote(provider, config, { token, side, amount, slippag
   const grossOut = buy ? out : out + platformFee;
   const impact = probeOut > 0n ? Number(BPS - (grossOut * BPS * probeIn) / (probeOut * swapIn)) : null;
   const minOut = (out * (BPS - BigInt(slippageBps))) / BPS;
-  const deadline = BigInt(Math.floor(now / 1000) + 120);
+  // The signed transaction reverts after `deadline`; the UI should re-quote well before
+  // that (expiresAt), and always immediately before asking the wallet to sign.
+  const deadline = BigInt(Math.floor(now / 1000) + QUOTE_TTL_S);
+  const blockNumber = await provider.getBlockNumber().catch(() => null);
   const result = {
     amountOut: formatUnits(out, buy ? decimals : 18), minOut: formatUnits(minOut, buy ? decimals : 18),
     feeHype: formatUnits(platformFee, 18), feeBps: Number(feeBps), priceImpactBps: impact == null ? null : Math.max(0, impact),
     route: `Uniswap v3 ${poolFee / 10_000}% pool via Misthra`, tx: null, approveTx: null, reason: null,
+    // Exact integers (base units) alongside the display strings above.
+    units: {
+      amountIn: input.toString(), amountInDecimals: buy ? 18 : decimals,
+      amountOut: out.toString(), minOut: minOut.toString(), amountOutDecimals: buy ? decimals : 18,
+      fee: platformFee.toString(), feeDecimals: 18,
+    },
+    slippageBps, quotedAt: now, expiresAt: now + QUOTE_REFRESH_MS, deadline: Number(deadline) * 1000, blockNumber,
   };
   if (!wallet) return { ...result, reason: 'Connect a wallet to get a transaction to sign.' };
   if (buy) {
-    result.tx = { to: config.tradeGateway, data: gateway.encodeFunctionData('buy', [token, poolFee, minOut, deadline]), value: input.toString(), chainId: config.chainId };
+    result.tx = { from: wallet, to: config.tradeGateway, data: gateway.encodeFunctionData('buy', [token, poolFee, minOut, deadline]), value: input.toString(), chainId: config.chainId };
   } else {
     const allowance = BigInt(await provider.call({ to: token, data: erc20.encodeFunctionData('allowance', [wallet, config.tradeGateway]) }));
-    if (allowance < input) result.approveTx = { to: token, data: erc20.encodeFunctionData('approve', [config.tradeGateway, MaxUint256]), value: '0', chainId: config.chainId };
-    result.tx = { to: config.tradeGateway, data: gateway.encodeFunctionData('sell', [token, poolFee, input, minOut, deadline]), value: '0', chainId: config.chainId };
+    // Approve exactly this sale, not an unlimited allowance.
+    if (allowance < input) result.approveTx = { from: wallet, to: token, data: erc20.encodeFunctionData('approve', [config.tradeGateway, input]), value: '0', chainId: config.chainId };
+    result.tx = { from: wallet, to: config.tradeGateway, data: gateway.encodeFunctionData('sell', [token, poolFee, input, minOut, deadline]), value: '0', chainId: config.chainId };
   }
   return result;
 }

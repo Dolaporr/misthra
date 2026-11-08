@@ -62,6 +62,11 @@ test('trade gateway takes a fixed HYPE fee on buys and sells and holds nothing',
   const buyQuote = await liveQuote(provider, config, { token: S, side: 'buy', amount: '2', slippageBps: 100, wallet: U, fee: 10000, now: (await now()) * 1000 });
   assert.equal(buyQuote.feeHype, '0.018');
   assert.equal(buyQuote.amountOut, '1982.0');
+  assert.equal(buyQuote.units.amountIn, parseEther('2').toString(), 'exact base units');
+  assert.equal(buyQuote.units.amountOut, parseEther('1982').toString());
+  assert.equal(BigInt(buyQuote.units.minOut), parseEther('1982') * 99n / 100n);
+  assert.equal(buyQuote.tx.from, U);
+  assert.ok(buyQuote.expiresAt > buyQuote.quotedAt && buyQuote.deadline > buyQuote.expiresAt, 'refresh before the on-chain deadline');
   const tokensBefore = await token.balanceOf(U);
   await wait(trader.sendTransaction({ to: buyQuote.tx.to, data: buyQuote.tx.data, value: BigInt(buyQuote.tx.value) }));
   assert.equal(await token.balanceOf(U) - tokensBefore, parseEther('1982'));
@@ -70,6 +75,9 @@ test('trade gateway takes a fixed HYPE fee on buys and sells and holds nothing',
   await wait(freshToken.mint(U, parseEther('100')));
   const sellQuote = await liveQuote(provider, config, { token: await freshToken.getAddress(), side: 'sell', amount: '100', slippageBps: 100, wallet: U, fee: 10000, now: (await now()) * 1000 });
   assert.ok(sellQuote.approveTx, 'a first sell asks for approval');
+  const { Interface: I } = await import('ethers');
+  const approved = new I(['function approve(address,uint256)']).decodeFunctionData('approve', sellQuote.approveTx.data);
+  assert.equal(approved[1], parseEther('100'), 'approval is for exactly this sale, not unlimited');
   await wait(trader.sendTransaction({ to: sellQuote.approveTx.to, data: sellQuote.approveTx.data }));
   const hypeBefore = await provider.getBalance(U);
   const sold = await wait(trader.sendTransaction({ to: sellQuote.tx.to, data: sellQuote.tx.data }));

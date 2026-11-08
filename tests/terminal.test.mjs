@@ -18,7 +18,7 @@ async function terminal(t) {
     const response = await fetch(origin + path, { method, headers: { ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) });
     return { status: response.status, body: await response.json() };
   };
-  t.after(async () => { await new Promise((r) => server.close(r)); app.locals.close(); await rm(directory, { recursive: true, force: true }); });
+  t.after(async () => { server.closeAllConnections(); await new Promise((r) => server.close(r)); app.locals.close(); await rm(directory, { recursive: true, force: true }); });
   const demo = async (role) => (await req('/api/auth/demo', { role })).body.token;
   return { app, req, demo, origin, sim: app.locals.terminal.source, advance: (ms) => (clock += ms), now: () => clock };
 }
@@ -124,7 +124,7 @@ test('the stream opens with its source', async (t) => {
   const response = await fetch(`${f.origin}/api/stream`, { signal: controller.signal });
   const reader = response.body.getReader();
   const { value } = await reader.read();
-  assert.match(new TextDecoder().decode(value), /event: hello\ndata: \{"source":"simulated"\}/);
+  assert.match(new TextDecoder().decode(value), /event: hello\ndata: \{"source":"simulated",/);
   controller.abort();
 });
 
@@ -170,4 +170,67 @@ test('simulated launches always carry a pad, including ones stored before pads w
   assert.equal(store.getRaw(address).pad, null);
   assert.ok(feed.repairPads() >= 1);
   assert.ok(store.getRaw(address).pad?.name);
+});
+
+test('capabilities say what is available, and why not when it is not', async (t) => {
+  const f = await terminal(t);
+  const { status, body } = await f.req('/api/capabilities');
+  assert.equal(status, 200);
+  assert.equal(body.source, 'simulated');
+  for (const key of ['walletTracking', 'portfolio', 'orders', 'social', 'hypercore', 'quotes', 'router', 'paperTrading', 'alerts', 'feed', 'stream']) {
+    assert.equal(typeof body[key].available, 'boolean', key);
+    if (!body[key].available) assert.ok(body[key].reason?.length > 10, `${key} explains why`);
+  }
+  assert.equal(body.wallet.external.available, true);
+  assert.equal(body.wallet.tradingWallet.available, false);
+  assert.equal(body.orders.available, false, 'no orders without a keeper');
+  assert.equal(body.portfolio.available, false);
+  assert.equal(body.paperTrading.available, true, 'simulated preview offers paper trading');
+  const v4 = body.venues.find((v) => v.id === 'uniswap-v4');
+  assert.equal(v4.trade, false); assert.match(v4.reason, /v4/);
+  assert.deepEqual(body.feed.windows, ['5m', '1h', '24h']);
+});
+
+test('the feed pages with a cursor: no duplicates, no gaps, bad cursors refused', async (t) => {
+  const f = await terminal(t);
+  for (const sort of ['age', 'volume']) {
+    const all = (await f.req(`/api/launches?limit=200&sort=${sort}`)).body.launches.map((l) => l.address);
+    const seen = []; let cursor = null, pages = 0;
+    do {
+      const { body } = await f.req(`/api/launches?limit=3&sort=${sort}${cursor ? `&cursor=${cursor}` : ''}`);
+      seen.push(...body.launches.map((l) => l.address)); cursor = body.nextCursor; pages += 1;
+      assert.equal(body.sort, sort);
+    } while (cursor && pages < 100);
+    assert.deepEqual(seen, all, `${sort}: paging returns the same rows in the same order`);
+    assert.ok(pages > 1);
+  }
+  const first = (await f.req('/api/launches?limit=2&sort=age')).body.nextCursor;
+  assert.equal((await f.req(`/api/launches?limit=2&sort=volume&cursor=${first}`)).status, 400, 'a cursor from another sort is refused');
+  assert.equal((await f.req('/api/launches?cursor=not-a-cursor')).status, 400);
+});
+
+test('the stream numbers events and replays what a reconnecting client missed', async (t) => {
+  const f = await terminal(t);
+  const read = async (headers = {}, want = 2) => {
+    const ctrl = new AbortController();
+    const res = await fetch(`${f.origin}/api/stream`, { headers, signal: ctrl.signal });
+    const reader = res.body.getReader(); let text = '';
+    const deadline = Date.now() + 1500;
+    while (Date.now() < deadline && (text.match(/^event: /gm) ?? []).length < want) {
+      const { value, done } = await Promise.race([reader.read(), new Promise((r) => setTimeout(() => r({ done: false }), 200))]);
+      if (done) break; if (value) text += new TextDecoder().decode(value);
+    }
+    ctrl.abort();
+    return text;
+  };
+  const hello = await read({}, 1);
+  assert.match(hello, /event: hello\ndata: \{"source":"simulated","streamId":"[a-z0-9]+","lastId":\d+\}/);
+  // Produce three launches, then reconnect claiming we saw none of them.
+  const before = Number(hello.match(/"lastId":(\d+)/)[1]);
+  for (let i = 0; i < 3; i += 1) f.app.locals.terminal.source.newLaunch(f.now());
+  const replay = await read({ 'Last-Event-ID': String(before) }, 4);
+  const ids = [...replay.matchAll(/^id: (\d+)$/gm)].map((m) => Number(m[1]));
+  assert.ok(ids.length >= 3, 'missed events are replayed');
+  assert.deepEqual(ids, [...ids].sort((a, b) => a - b), 'in order');
+  assert.ok(ids.every((id) => id > before));
 });

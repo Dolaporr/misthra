@@ -52,20 +52,49 @@ type Launch = {
 
 ## Endpoints
 
+### Capabilities
+- `GET /api/capabilities` (no session needed) → what is switched on right now. Every capability is `{ available: boolean, reason: string | null, ... }`; `reason` is user-ready text when `available` is false. **Unavailable** (shown here, endpoint answers 503) is different from **available with no records** (endpoint answers 200 with an empty list).
+  Example (live, 2026-11-08):
+  ```json
+  { "source": "live", "chainId": 99901, "networkVerified": true,
+    "wallet": { "external": { "available": true, "reason": null, "note": "Any injected EVM wallet…" },
+                "tradingWallet": { "available": false, "reason": "Not available yet. A user-controlled trading wallet is being designed…" } },
+    "venues": [ { "id": "uniswap-v3", "name": "Uniswap v3", "version": 3, "indexed": true, "trade": true, "reason": null, "fee": { "bps": 75, "to": "Misthra" } },
+                { "id": "uniswap-v4", "name": "Uniswap v4", "version": 4, "indexed": true, "indexedPads": ["montra"], "trade": false, "reason": "Misthra cannot route Uniswap v4 trades yet…", "fee": null },
+                { "id": "agora", "name": "Agora", "indexed": false, "trade": false, "reason": "Not connected…" } ],
+    "feed": { "available": true, "windows": ["5m","1h","24h"], "candleTimeframes": ["15s","1m","5m","15m","1h"], "sorts": ["age","volume","holders","traction"], "filters": ["stage","pad","q"], "maxLimit": 200, "history": "…" },
+    "stream": { "available": true, "transport": "sse", "path": "/api/stream", "events": ["hello","launch","update","alert","reset"] },
+    "quotes": { "available": true, "venues": ["uniswap-v3"] }, "paperTrading": { "available": false, "reason": "…" },
+    "router": { "available": true }, "alerts": { "available": true, "delivery": ["in-app"] },
+    "walletTracking": { "available": true, "via": "alerts", "note": "…" },
+    "portfolio": { "available": false, "reason": "Not built yet…" },
+    "orders": { "available": false, "reason": "Limit and stop orders need an automated keeper and a scoped signing permission…" },
+    "social": { "available": false, "reason": "No social data provider is connected." },
+    "hypercore": { "available": false, "reason": "HyperCore execution is not available on Elysium yet." } }
+  ```
+
 ### Feed
-- `GET /api/launches?stage=new|stretch|migrated&pad=<id>&q=<text>&sort=age|volume|holders|traction&limit=60`
-  → `{ source, networkVerified: boolean | null, tradeFeeBps: number, indexedBlock, updatedAt, pads: Pad[], launches: Launch[] }`
+- `GET /api/launches?stage=new|stretch|migrated&pad=<id>&q=<text>&sort=age|volume|holders|traction&limit=60&cursor=<nextCursor>`
+  → `{ source, networkVerified: boolean | null, tradeFeeBps: number, indexedBlock, updatedAt, sort, nextCursor: string | null, pads: Pad[], launches: Launch[] }`
+  **Pagination:** pass `nextCursor` back as `cursor` with the same `sort` and filters; `nextCursor: null` means the last page. Rows are ordered by the sort key, then by `address`, so pages never repeat or skip a row for `sort=age`. For `volume`, `holders` and `traction` a row whose number changes between requests can move across the page boundary; refetch page 1 when that matters. A cursor from another sort is a `400`. `limit` is 1–200.
+  **Identity:** a launch is identified by its token `address`; its pool by `pool.address` (v3) or `pool.poolId` (v4, with `pool.address` = the shared PoolManager). `createdAt` is the block time in ms, `createdBlock` its block.
+  **Windows that exist:** volume and price change for `5m`, `1h`, `24h` only (see `/api/capabilities`). There is no 1m or 30m figure; do not derive one. Candles are a separate series (`15s`…`1h`).
   `networkVerified` is false in live mode until the operator confirms every network address; show a warning when it is false.
 - `GET /api/launches/:address` → `{ source, launch: Launch }`
 - `GET /api/launches/:address/candles?tf=15s|1m|5m|15m|1h` → `{ source, bars: { t, o, h, l, c, v }[] }` (price in HYPE, volume in HYPE)
 - `GET /api/launches/:address/trades?limit=50` → `{ source, trades: { tx, t, side: 'buy'|'sell', trader, amountHype, amountToken }[] }`
 - `GET /api/launches/:address/holders` → `{ source, holders: { address, pct, tags: ('creator'|'pool'|'burn'|'router'|'early')[] }[] }`
-- `GET /api/stream` (Server-Sent Events): `launch` (new Launch), `update` (partial Launch with `address`), `alert` (AlertEvent)
+- `GET /api/stream` (Server-Sent Events): `hello` `{ source, streamId, lastId }`, then `launch` (new Launch), `update` (partial Launch with `address`), `alert` (AlertEvent, owner's session only), `reset` `{ reason }`.
+  Every event after `hello` has an increasing `id:`. On reconnect the browser's EventSource sends `Last-Event-ID` and the server replays what was missed (the last 1,000 events); if it fell further behind it sends `reset`: refetch the feed. If `hello.streamId` differs from the one you had, the server restarted: refetch. The server pushes as events happen; **the frontend owns display cadence**: buffer events while a row is hovered or focused, and apply them when released.
 
 ### Trade
 - `POST /api/trade/quote` body `{ token, side: 'buy'|'sell', amount, slippageBps, wallet? }` (amount in HYPE for buys, tokens for sells; `wallet` defaults to the session's)
   → `{ source, via: 'misthra' | 'agora' | 'simulated', approvals: Tx[], amountOut, minOut, feeHype: string | null, feeBps: number | null, priceImpactBps: number | null, route: string, tx: { to, data, value, chainId } | null, approveTx: { to, data, value, chainId } | null, reason: string | null }`
-  `tx` is null in simulated mode, without a wallet, or when swaps are not configured; `reason` says why. For a sell, send `approveTx` first when it is present. Buys use a 2-minute deadline.
+  `tx` is null in simulated mode, without a wallet, or when swaps are not configured; `reason` says why. For a sell, send `approveTx` first when it is present: it approves **exactly** this sale's amount, never an unlimited allowance.
+  Live Misthra quotes also carry exact integers and timing:
+  `units: { amountIn, amountInDecimals, amountOut, minOut, amountOutDecimals, fee, feeDecimals }` (base-unit strings; `amountIn` for a buy is wei of HYPE), `slippageBps`, `quotedAt` (ms), `expiresAt` (ms, quotedAt + 20 s: re-quote after this), `deadline` (ms, quotedAt + 120 s: the transaction reverts after this), `blockNumber` (block the quote was priced at, or null), and `tx.from` / `approveTx.from` = the signer the transaction was built for.
+  **Quick buy flow:** a preset only changes the amount in the request. Always request a fresh quote immediately before opening the wallet, show the reviewed numbers, and refuse to sign if `expiresAt` has passed, `tx.from` is not the connected account, or the wallet's chain is not `tx.chainId`. Disable the button from send until the receipt (or a clear failure) so one click cannot submit twice; on reload, recover a pending hash from the receipt rather than resending.
+  **Unsupported pools:** when `launch.trade.misthra` is false (e.g. Uniswap v4), the quote never routes through the v3 gateway: it returns `tx: null` and `reason` (the same text as `launch.trade.reason`). Show that and `launch.trade.venueUrl` without requesting a quote at all.
   Live trades go through `MisthraTradeGateway`, which takes `feeBps` (0.75% at launch, at most 1%) in HYPE in the same transaction; `amountOut` and `minOut` are what the trader receives after it. Pools on another factory or quoted in another WHYPE are shown but not traded (`tx` null, `reason` explains), unless Agora routing is enabled: then `via: 'agora'` and the trade goes through Agora's best price with Misthra's builder code. Send every entry of `approvals` in order before `tx`.
 - Paper desk (simulated only): `POST /api/paper/fill` `{ token, side, amount, slippageBps }` → `{ fill }`; `GET /api/paper/positions` → `{ positions }`
 

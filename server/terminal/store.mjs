@@ -149,16 +149,33 @@ export function createTerminalStore(db, { now = () => Date.now() } = {}) {
       };
     },
 
-    list(config, { stage, pad, q: text, sort = 'age', limit = 60 } = {}, at = now()) {
+    list(config, opts = {}, at = now()) { return store.page(config, opts, at).launches; },
+
+    // Keyset pagination: rows are ordered by the sort key, then by address, and the
+    // cursor names the last row returned. Stable across new inserts for 'age'; for the
+    // live sorts (volume, holders, traction) a row whose value changes can move across
+    // the cursor, which is inherent to sorting by a changing number.
+    page(config, { stage, pad, q: text, sort = 'age', limit = 60, cursor = null } = {}, at = now()) {
       const needle = text?.trim().toLowerCase();
       let rows = q.allLaunches.all().map(parse).map((raw) => ({ raw, api: store.toApi(raw, config, at) }));
       rows = rows.filter(({ api }) => (needle ? true : api.stage !== null));
       if (stage) rows = rows.filter(({ api }) => api.stage === stage);
       if (pad) rows = rows.filter(({ api }) => api.pad?.id === pad);
       if (needle) rows = rows.filter(({ api }) => [api.name, api.symbol, api.address].some((v) => v.toLowerCase().includes(needle)));
-      const key = { age: (x) => -x.api.createdAt, volume: (x) => -Number(x.api.volume24hHype), holders: (x) => -x.api.holders, traction: (x) => -(x.api.traction?.score ?? -1) }[sort] ?? ((x) => -x.api.createdAt);
-      rows.sort((x, y) => key(x) - key(y));
-      return rows.slice(0, Math.min(200, Math.max(1, limit))).map((r) => r.api);
+      const sortKey = { age: (a) => -a.createdAt, volume: (a) => -Number(a.volume24hHype), holders: (a) => -a.holders, traction: (a) => -(a.traction?.score ?? -1) }[sort] ? sort : 'age';
+      const key = { age: (a) => -a.createdAt, volume: (a) => -Number(a.volume24hHype), holders: (a) => -a.holders, traction: (a) => -(a.traction?.score ?? -1) }[sortKey];
+      const cmp = (x, y) => (key(x) - key(y)) || (x.address < y.address ? -1 : x.address > y.address ? 1 : 0);
+      rows.sort((x, y) => cmp(x.api, y.api));
+      if (cursor) {
+        let c; try { c = JSON.parse(Buffer.from(String(cursor), 'base64url').toString()); } catch { c = null; }
+        if (!c || c.s !== sortKey || typeof c.a !== 'string' || typeof c.k !== 'number') { const e = new Error('This cursor is not valid for this sort.'); e.status = 400; e.expose = true; throw e; }
+        rows = rows.filter(({ api }) => key(api) > c.k || (key(api) === c.k && api.address > c.a));
+      }
+      const n = Math.min(200, Math.max(1, Number(limit) || 60));
+      const pageRows = rows.slice(0, n).map((r) => r.api);
+      const last = pageRows.at(-1);
+      const nextCursor = rows.length > n && last ? Buffer.from(JSON.stringify({ s: sortKey, k: key(last), a: last.address })).toString('base64url') : null;
+      return { launches: pageRows, nextCursor, sort: sortKey };
     },
 
     trades: (address, limit = 50) => q.trades.all(address.toLowerCase(), limit).map((r) => ({ tx: r.tx, t: r.t, side: r.side, trader: r.trader, amountHype: decimal(r.hype), amountToken: decimal(r.tokens) })),

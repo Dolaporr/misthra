@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { liveQuote, simulatedQuote } from '../../chain/trade.mjs';
 import { planRouter } from '../../chain/router-plan.mjs';
 import { PAD_SUPPORT, PAD_SUPPORT_CHECKED, usable } from './pad-support.mjs';
+import { capabilities } from './capabilities.mjs';
 import { readRouterSnapshot, RouterReadError } from '../../chain/router-reads.mjs';
 import { prepareRouterAction } from '../../chain/router-actions.mjs';
 import { readFileSync } from 'node:fs';
@@ -17,9 +18,18 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
   const r = express.Router();
   const source = () => (config.live ? 'live' : 'simulated');
   const clients = new Map(); // response -> wallet address or null
+  // Every event gets an increasing id. The last REPLAY events are kept so a client that
+  // reconnects with Last-Event-ID gets what it missed; if it fell further behind, it gets
+  // a `reset` event and should refetch. Ids restart when the server restarts, so the
+  // `hello` event carries a `streamId`: if it changed, refetch as well.
+  const REPLAY = 1000, streamId = `${now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  const recent = []; let seq = 0;
+  const frame = (e) => `id: ${e.id}\nevent: ${e.event}\ndata: ${JSON.stringify(e.data)}\n\n`;
   // Market events go to everyone; an alert goes only to the session that owns it.
   const send = (event, data, owner = null) => {
-    for (const [res, address] of clients) if (!owner || owner === address) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    const e = { id: ++seq, event, data, owner };
+    recent.push(e); if (recent.length > REPLAY) recent.shift();
+    for (const [res, address] of clients) if (!owner || owner === address) res.write(frame(e));
   };
   // Deliberate refusals carry `expose`: their message is shown even for 5xx. Crashes are not.
   const fail = (status, message, code) => { const e = new Error(message); e.status = status; e.code = code; e.expose = true; throw e; };
@@ -31,11 +41,11 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
   r.get('/launches', json((req) => {
     const stage = STAGES.includes(req.query.stage) ? req.query.stage : undefined;
     const limit = Number(req.query.limit) || 60;
-    const launches = store.list(config, { stage, pad: req.query.pad || undefined, q: req.query.q || undefined, sort: req.query.sort, limit });
+    const { launches, nextCursor, sort } = store.page(config, { stage, pad: req.query.pad || undefined, q: req.query.q || undefined, sort: req.query.sort, limit, cursor: req.query.cursor || null });
     // Configured pads in live mode; in the simulated preview, the sample pads present in the feed.
     const pads = config.pads.length ? config.pads.map((p) => ({ id: p.id, name: p.name, url: p.url }))
       : [...new Map(store.list(config, { limit: 200 }).filter((l) => l.pad).map((l) => [l.pad.id, l.pad])).values()];
-    return { source: source(), networkVerified: config.live ? config.networkVerified : null, tradeFeeBps: config.tradeFeeBps, indexedBlock: Number(store.meta('idx.indexedBlock') ?? 0), updatedAt: now(), pads, launches };
+    return { source: source(), networkVerified: config.live ? config.networkVerified : null, tradeFeeBps: config.tradeFeeBps, indexedBlock: Number(store.meta('idx.indexedBlock') ?? 0), updatedAt: now(), sort, nextCursor, pads, launches };
   }));
   r.get('/launches/:address', json((req) => ({ source: source(), launch: store.toApi(launchOr404(req.params.address), config) })));
   r.get('/launches/:address/candles', json((req) => { launchOr404(req.params.address); return { source: source(), bars: store.candles(req.params.address, req.query.tf) }; }));
@@ -56,7 +66,9 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
     if (!raw && !agoraOn) fail(404, 'This launch is not indexed.');
     // Route 1: Misthra's own gateway, for pools on the canonical factory quoted in
     // the canonical WHYPE. Earns the Misthra trade fee.
-    const tradable = Boolean(raw) && (!raw.pool.factory || (raw.pool.factory === config.v3Factory && (!raw.pool.quote || raw.pool.quote === config.whype)));
+    // One rule for what Misthra can trade: the same check the feed exposes as launch.trade.
+    // v4 pools never reach the v3 gateway.
+    const tradable = Boolean(raw) && store.toApi(raw, config).trade.misthra;
     if (config.tradeReady && provider && tradable) {
       const quote = await liveQuote(provider, config, { ...body, wallet: body.wallet ?? who(req), fee: raw.pool.fee, decimals: raw.decimals, now: now() });
       return { source: 'live', via: 'misthra', approvals: quote.approveTx ? [quote.approveTx] : [], ...quote };
@@ -151,10 +163,18 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
     try { return await prepareRouterAction(provider, config, req.params.address, { action: req.body?.action, from, params: req.body?.params ?? {} }); } catch (e) { return routerError(e); }
   }));
 
+  r.get('/capabilities', json(() => capabilities(config, { agoraOn })));
+
   r.get('/stream', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
-    res.write(`event: hello\ndata: ${JSON.stringify({ source: source() })}\n\n`);
-    clients.set(res, who(req));
+    const owner = who(req);
+    res.write(`retry: 3000\nevent: hello\ndata: ${JSON.stringify({ source: source(), streamId, lastId: seq })}\n\n`);
+    const last = Number(req.headers['last-event-id'] ?? req.query.lastEventId);
+    if (Number.isInteger(last) && last >= 0 && last < seq) {
+      if (!recent.length || recent[0].id > last + 1) res.write(`event: reset\ndata: ${JSON.stringify({ reason: 'Too many updates were missed; refetch the feed.' })}\n\n`);
+      else for (const e of recent) if (e.id > last && (!e.owner || e.owner === owner)) res.write(frame(e));
+    }
+    clients.set(res, owner);
     const ping = setInterval(() => res.write(': ping\n\n'), 25_000);
     req.on('close', () => { clearInterval(ping); clients.delete(res); });
   });

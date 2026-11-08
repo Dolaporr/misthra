@@ -156,3 +156,18 @@ test('router status: the sample router in preview, honest refusals otherwise', a
   assert.equal(prep.status, 503);
   assert.match(prep.body.error, /live Elysium connection/);
 });
+
+test('simulated launches always carry a pad, including ones stored before pads were assigned', async () => {
+  const { createTerminalStore } = await import('../server/terminal/store.mjs');
+  const { createSimFeed } = await import('../server/terminal/simfeed.mjs');
+  const { DatabaseSync } = await import('node:sqlite');
+  const store = createTerminalStore(new DatabaseSync(':memory:'));
+  const feed = createSimFeed(store, { fixturePath: new URL('../fixtures/launches.sample.json', import.meta.url).pathname });
+  feed.seedFromFixture();
+  const address = feed.newLaunch(Date.now());
+  assert.ok(store.getRaw(address).pad?.name);
+  const { source, ...raw } = store.getRaw(address); store.putLaunch({ ...raw, pad: null, padId: null }, 'simulated');
+  assert.equal(store.getRaw(address).pad, null);
+  assert.ok(feed.repairPads() >= 1);
+  assert.ok(store.getRaw(address).pad?.name);
+});

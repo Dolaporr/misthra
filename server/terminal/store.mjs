@@ -62,6 +62,7 @@ export function createTerminalStore(db, { now = () => Date.now() } = {}) {
     meta: (key) => q.getMeta.get(key)?.value ?? null,
     setMeta: (key, value) => q.setMeta.run(key, String(value)),
     getRaw: (address) => parse(q.getLaunch.get(address.toLowerCase())),
+    allRaw: () => q.allLaunches.all().map(parse),
     putLaunch(data, source) {
       const address = data.address.toLowerCase();
       const previous = parse(q.getLaunch.get(address));

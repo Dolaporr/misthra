@@ -17,6 +17,9 @@ function prng(seed) { let s = seed >>> 0 || 1; return () => ((s = (s * 1664525 +
 export function createSimFeed(store, { fixturePath, now = () => Date.now(), seed = 7, onLaunch = () => {}, onTrade = () => {} } = {}) {
   const rand = prng(seed);
   let counter = Number(store.meta('sim.counter') ?? 0);
+  // New simulated launches borrow a pad from the fixture so the feed never shows "Unknown pad".
+  let pads = [];
+  try { pads = JSON.parse(readFileSync(fixturePath, 'utf8')).pads ?? []; } catch { pads = []; }
 
   function seedFromFixture() {
     if (store.meta('sim.seeded')) return 0;
@@ -58,8 +61,9 @@ export function createSimFeed(store, { fixturePath, now = () => Date.now(), seed
     const name = `${NAMES[counter % NAMES.length]} ${counter}`;
     const symbol = name.replace(/[^A-Za-z]/g, '').slice(0, 4).toUpperCase() + (counter % 100);
     const address = fakeAddress(`sim-launch-${counter}`);
+    const pad = pads.length ? pads[counter % pads.length] : null;
     const raw = {
-      address, name, symbol, decimals: 18, image: null, padId: null, pad: null, createdAt: at, createdBlock: 2_000_000 + counter * 300,
+      address, name, symbol, decimals: 18, image: null, padId: pad?.id ?? null, pad, createdAt: at, createdBlock: 2_000_000 + counter * 300,
       creator: fakeAddress(`sim-creator-${counter}`), pool: { address: fakeAddress(`sim-pool-${counter}`), venue: 'uniswap-v3', fee: 10000 },
       totalSupply: 1_000_000_000, liquidityHype: 5 + rand() * 30, simHolders: 1, simTop10Pct: null, safety: { checks: [], checkedAt: null }, ai: null, router: null, links: {},
     };
@@ -89,9 +93,22 @@ export function createSimFeed(store, { fixturePath, now = () => Date.now(), seed
   }
 
   let timer = null;
+  // Older simulated launches were stored without a pad; give them one (simulated rows only).
+  function repairPads() {
+    if (!pads.length || !store.allRaw) return 0;
+    let n = 0;
+    for (const row of store.allRaw()) {
+      if (!row || row.pad || row.source !== 'simulated') continue;
+      const { source, ...raw } = row;
+      const pad = pads[Number.parseInt(raw.address.slice(-4), 16) % pads.length];
+      store.putLaunch({ ...raw, padId: pad.id, pad }, 'simulated'); n += 1;
+    }
+    return n;
+  }
+
   return {
-    seedFromFixture, tick, newLaunch,
-    start(ms = 3000) { seedFromFixture(); timer ??= setInterval(tick, ms); timer.unref?.(); },
+    seedFromFixture, tick, newLaunch, repairPads,
+    start(ms = 3000) { seedFromFixture(); repairPads(); timer ??= setInterval(tick, ms); timer.unref?.(); },
     stop() { if (timer) clearInterval(timer); timer = null; },
   };
 }

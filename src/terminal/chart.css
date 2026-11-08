@@ -1,0 +1,19 @@
+.candle-workspace{margin:0;min-width:0}
+.candle-interaction{width:100%;min-width:0;touch-action:pan-y;border-radius:7px}
+.candle-interaction:focus-visible{outline:2px solid #7fa8ff;outline-offset:3px}
+.candle-workspace .candles{height:auto;aspect-ratio:auto;display:block;width:100%}
+.chart-axis line{stroke:#34435a;stroke-width:.6}
+.chart-axis text,.chart-unit{fill:#b7c9e5;font-family:'Inter Variable',sans-serif;font-size:10px}
+.chart-crosshair line{stroke:#c0d8ff;stroke-width:1;stroke-dasharray:3 4;pointer-events:none}
+.chart-crosshair circle{fill:#d6e6ff;stroke:#182437;stroke-width:1}
+.chart-readout-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px}
+.chart-readout-heading>span{font-size:11px;line-height:1.7;color:#bfcee5}
+.chart-readout-heading>div{display:flex;gap:5px}
+.chart-readout-heading .icon-button{width:36px;height:44px;border:1px solid #3a4b65;color:#bdd4fa}
+.chart-ohlc{display:flex;flex-wrap:wrap;gap:12px 20px;margin:8px 0 0}
+.chart-ohlc dt{font-size:10px;color:#b7c9e5;margin-bottom:5px}
+.chart-ohlc dd{font-size:11px;margin:0;color:#edf3ff;font-variant-numeric:tabular-nums}
+.chart-instructions{font-size:10px;color:#b2c7e7;line-height:1.8;margin:15px 0 0}
+.chart-panel .tf-switch button{min-height:44px}
+.chart-panel .panel-head{flex-wrap:wrap}
+@media(max-width:760px){.chart-readout-heading{gap:6px}.chart-ohlc{gap:13px}.chart-ohlc dd{font-size:10px}.chart-instructions{font-size:11px}.chart-panel .tf-switch{flex-wrap:wrap}.chart-panel .tf-switch button{padding:8px 10px}}

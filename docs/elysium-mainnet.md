@@ -29,3 +29,16 @@ Status: **community-verified, not yet official.** Kinetiq's docs list only testn
 | Ascend | Curve → Pancake Infinity (USDC pairs) | — | Not indexed; trade via Agora |
 
 Agora (aggregator) router: `0xAf8dEc958Df2bd664AA661716a8de5Fe0417A295` (0.75% fee). Not yet allow-listed in Misthra; confirm with Agora's docs before setting `AGORA_ALLOWED_TARGETS`.
+
+## Misthra contracts (deployed 2026-11-08 by `0x8c85903cCb56b63f601bed36444f104000e247F2`)
+
+Checked on-chain after deploy: code present on 99901; gateway `feeBps()` = 75, `feeRecipient()` = treasury, `swapRouter()` = SwapRouter02. Router implementation codehash `0xb31dcc16b6ff4b34894053acc7c437555a07ed6e7988d987f43beabf0d9ad39e` (matches `RouterTypes.sol`). No owner or admin functions; the deployer keeps no control. **Unaudited: start with small amounts.**
+
+| Contract | Address |
+|---|---|
+| MisthraTradeGateway | `0x0f8a2Ef4e008B4b72FC4a18019e746b69072F678` |
+| MisthraFeeRouter (implementation) | `0x8ab909257af7c5efb118e1dc1944684b4c144811` |
+| MisthraFeeRouterFactory | `0xB282b39a0b168d7409Fba1F0B149da6eEE08FFfd` |
+| MisthraV3SwapAdapter | `0x0c288F86cB06DbD1f85578f9fFf1D7e1F05eAC7d` |
+| MisthraSharedV3TwapPriceGuard | `0x3DDD50BebCe1ff866055A0D7F2F82433b24C7DE1` |
+| Fee recipient (treasury) | `0xC43eB4113BFb7267D54e1592743f24f53a774128` |

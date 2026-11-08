@@ -1,8 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 // Modified by Misthra, 2026-11-07, from Sinjoh-Finance/sinjoh-contracts
 // (sinjoh-fee-router/src/SinjohFeeRouter.sol, Apache-2.0). Changes: renamed for Misthra on Elysium; the wrapped
-// native asset is WHYPE instead of WETH. See NOTICE.
+// native asset is WHYPE instead of WETH. 2026-11-08: native HYPE intake. Elysium pads
+// may pay creator fees in plain HYPE, so `sync(address(0))` wraps the unowed native
+// balance into WHYPE and syncs that, instead of reverting. See NOTICE.
 pragma solidity 0.8.28;
+
+interface IWHYPEDeposit {
+    function deposit() external payable;
+}
 
 import { RouterTypes } from "./RouterTypes.sol";
 import { IMisthraSink } from "./interfaces/IMisthraSink.sol";
@@ -289,6 +295,10 @@ contract MisthraFeeRouter {
     /// silently accepted a swappable asset would be a footgun on a fresh
     /// immutable contract, and nothing predates this one to need it.
     function sync(address asset) external nonReentrant returns (uint256 gross, uint256 fee) {
+        if (asset == address(0)) {
+            _wrapUnownedNative();
+            return _sync(whype, 0);
+        }
         if (asset != whype) {
             // Report why it is refused, not merely that it is. Telling a caller
             // to supply a floor for an asset with no route would send them to
@@ -328,7 +338,7 @@ contract MisthraFeeRouter {
         // Native intake is deliberately unsupported: adapters wrap before
         // forwarding, which keeps intake uniformly ERC-20 and every balance
         // here measurable the same way.
-        if (asset == address(0)) revert NativeIntakeUnsupported();
+        if (asset == address(0)) revert NativeIntakeUnsupported(); // reached only via sync(address(0)), which wraps first
         if (asset != whype && _normalizationIndex[asset] == 0) revert UnsupportedAsset(asset);
         if (asset != whype && minAmountOut == 0) revert NormalizationFloorRequired(asset);
 
@@ -952,6 +962,18 @@ contract MisthraFeeRouter {
         returns (bool)
     {
         return left.kind == right.kind && left.token == right.token;
+    }
+
+    /// @dev Native HYPE the router owes (native buckets' unpaid wallets) stays
+    /// native. Only the balance above that liability is new fee income, and it is
+    /// wrapped so intake stays uniformly WHYPE from here on.
+    function _wrapUnownedNative() private {
+        if (!bound) revert NotBound();
+        uint256 balance = address(this).balance;
+        uint256 owed = totalLiability[address(0)];
+        if (balance < owed) revert Insolvent(address(0));
+        uint256 unowned = balance - owed;
+        if (unowned != 0) IWHYPEDeposit(whype).deposit{ value: unowned }();
     }
 
     function _assetBalance(address asset) private view returns (uint256) {

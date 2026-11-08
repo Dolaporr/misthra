@@ -127,3 +127,14 @@ test('the stream opens with its source', async (t) => {
   assert.match(new TextDecoder().decode(value), /event: hello\ndata: \{"source":"simulated"\}/);
   controller.abort();
 });
+
+test('pad support is served with its confidence level', async (t) => {
+  const f = await terminal(t);
+  const { status, body } = await f.req('/api/router/pads');
+  assert.equal(status, 200);
+  assert.equal(body.checked.onchain, false);
+  const byId = Object.fromEntries(body.pads.map((p) => [p.id, p]));
+  assert.equal(byId.montra.usable, true);
+  assert.equal(byId.ascend.buyback, 'no', 'Ascend pools are Uniswap v4');
+  assert.equal(byId.kleos.usable, false);
+});

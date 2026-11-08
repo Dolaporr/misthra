@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ArrowLeft, ExternalLink, Route as RouteIcon } from 'lucide-react';
-import { post } from '../api';
-import { useApp } from '../state';
+import { TradePanel } from '../terminal/TradePanel';
 import { Empty } from '../components/ui';
 import { SafetyIcon, SourceBadge } from './Terminal';
-import { STAGES, age, hype, pct, sendWithWallet, shortAddr, usePoll, type Bar, type Holder, type Launch, type Quote, type Trade } from '../terminal/model';
+import { STAGES, age, hype, pct, shortAddr, usePoll, type Bar, type Holder, type Launch, type Trade } from '../terminal/model';
 
 const TFS = ['15s', '1m', '5m', '15m', '1h'] as const;
 
@@ -97,57 +96,4 @@ function Candles({ bars }: { bars: Bar[] }) {
       </g>;
     })}
   </svg>;
-}
-
-function TradePanel({ launch, autoFocus }: { launch: Launch; autoFocus: boolean }) {
-  const { identity, notify, openWallet } = useApp();
-  const [side, setSide] = useState<'buy' | 'sell'>('buy');
-  const [amount, setAmount] = useState('0.5');
-  const [slippage, setSlippage] = useState('1');
-  const [quote, setQuote] = useState<Quote | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const input = useRef<HTMLInputElement>(null);
-  useEffect(() => { if (autoFocus) input.current?.focus(); }, [autoFocus]);
-  useEffect(() => { setQuote(null); setError(null); }, [side, amount, slippage, launch.address]);
-  const slippageBps = Math.round(Number(slippage) * 100);
-  const valid = /^\d+(\.\d{1,18})?$/.test(amount) && Number(amount) > 0 && slippageBps >= 1 && slippageBps <= 5000;
-
-  const getQuote = async () => {
-    setBusy(true); setError(null);
-    try { setQuote(await post<Quote>('/trade/quote', { token: launch.address, side, amount, slippageBps, ...(identity.address && identity.role === 'wallet' ? { wallet: identity.address } : {}) })); }
-    catch (e) { setError((e as Error).message); } finally { setBusy(false); }
-  };
-  const execute = async () => {
-    if (!quote?.tx) return;
-    setBusy(true); setError(null);
-    try {
-      const approvals = quote.approvals?.length ? quote.approvals : quote.approveTx ? [quote.approveTx] : [];
-      for (const approval of approvals) { await sendWithWallet(approval); notify('Approval sent. Confirm the next step in your wallet.'); }
-      const hash = await sendWithWallet(quote.tx);
-      notify(`Transaction sent: ${hash.slice(0, 10)}…`); setQuote(null);
-    } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
-  };
-  const paper = async () => {
-    if (!identity.address) { openWallet(); return; }
-    setBusy(true); setError(null);
-    try { const r = await post<{ fill: { tokens: number; hype: number } }>('/paper/fill', { token: launch.address, side, amount, slippageBps }); notify(`Paper ${side}: ${hype(r.fill.tokens)} ${launch.symbol} for ${hype(r.fill.hype)} HYPE.`); setQuote(null); }
-    catch (e) { setError((e as Error).message); } finally { setBusy(false); }
-  };
-
-  return <section className="panel trade-panel" aria-label={`Trade ${launch.symbol}`}>
-    <div className="side-switch" role="group" aria-label="Side">{(['buy', 'sell'] as const).map((s) => <button key={s} className={side === s ? `selected ${s}` : ''} aria-pressed={side === s} onClick={() => setSide(s)}>{s === 'buy' ? 'Buy' : 'Sell'}</button>)}</div>
-    <label className="field-label" htmlFor="trade-amount">{side === 'buy' ? 'Amount in HYPE' : `Amount in ${launch.symbol}`}</label>
-    <input id="trade-amount" ref={input} className="amount-field" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value.trim())} />
-    {side === 'buy' && <div className="presets">{['0.1', '0.5', '1', '5'].map((p) => <button key={p} className={amount === p ? 'selected' : ''} onClick={() => setAmount(p)}>{p}</button>)}</div>}
-    <label className="field-label inline" htmlFor="trade-slippage">Slippage %<input id="trade-slippage" inputMode="decimal" value={slippage} onChange={(e) => setSlippage(e.target.value.trim())} /></label>
-    <button className="button primary full" disabled={!valid || busy} onClick={getQuote}>{busy && !quote ? 'Quoting…' : 'Get quote'}</button>
-    {quote && <div className="quote" aria-live="polite">
-      <dl><div><dt>You receive</dt><dd>{hype(quote.amountOut)} {side === 'buy' ? launch.symbol : 'HYPE'}</dd></div><div><dt>At least</dt><dd>{hype(quote.minOut)}</dd></div><div><dt>{quote.via === 'agora' ? 'Agora fee' : `Misthra fee${quote.feeBps != null ? ` (${(quote.feeBps / 100).toFixed(2).replace(/0$/, '')}%)` : ''}`}</dt><dd>{quote.feeHype == null ? 'Included in the quote' : `${hype(quote.feeHype)} HYPE`}</dd></div><div><dt>Price impact</dt><dd>{quote.priceImpactBps == null ? '–' : `${(quote.priceImpactBps / 100).toFixed(2)}%`}</dd></div><div><dt>Route</dt><dd>{quote.route}</dd></div></dl>
-      {quote.tx ? <button className="button primary full" disabled={busy} onClick={execute}>{(quote.approvals?.length || quote.approveTx) ? 'Approve, then swap in wallet' : 'Confirm in wallet'}</button>
-        : <><p className="muted small">{quote.reason}</p>{quote.source === 'simulated' && <button className="button secondary full" disabled={busy} onClick={paper}>{identity.address ? 'Paper fill (simulated)' : 'Sign in for a paper fill'}</button>}</>}
-    </div>}
-    {error && <p className="error-text" role="alert">{error}</p>}
-    <p className="muted small">Misthra never holds your keys. Real trades are signed in your own wallet. Stop-losses are not offered: they would need someone to sell while you are away.</p>
-  </section>;
 }

@@ -11,7 +11,7 @@ library RouterTypes {
     /// factory, so the factory refuses any other implementation. Unlike
     /// Sinjoh's pinned value, this is not an audited hash.
     bytes32 internal constant IMPLEMENTATION_CODEHASH =
-        0x35d55c0caff6184c8c5fdacf74e79395ef88c9e98cf058fd005b353d91bfa20c;
+        0xb31dcc16b6ff4b34894053acc7c437555a07ed6e7988d987f43beabf0d9ad39e;
 
     enum AssetKind {
         NATIVE,

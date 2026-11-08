@@ -75,6 +75,9 @@ The stream sends each `alert` event only to the session that owns the rule.
   Invalid plans return `400 { error }` with a readable message. Without a deployed router factory, `predictedAddress` and `deployTx` are null and `reason` explains. A buyback-and-burn bucket also needs the shared price guard.
 - `GET /api/router/:address`: **not built yet** (`TODO(api)`). Until it exists, show the router's buckets from `launch.router` and link to the explorer.
 - Protocol fee is fixed at 1% in the contract.
+- `GET /api/router/pads` → `{ checked: { at, by, onchain }, pads: { id, name, recipient: 'at-launch'|'after-launch'|'unconfirmed', delivery: 'push'|'claim'|'unknown', buyback: 'yes'|'no'|'unconfirmed', note, usable }[] }`
+  Which launchpads can send creator fees to a router. Show `note` and say plainly that the list is from the pads' docs and not yet confirmed on-chain while `checked.onchain` is false.
+- The router accepts creator fees in WHYPE, in native HYPE (`sync(address(0))` wraps what is not already owed), or in the launched token when it trades on the canonical Uniswap v3 deployment.
 
 ### Existing (Agents section, unchanged)
 Missions, agents, inbox, account: see `docs/api-contract.md`.

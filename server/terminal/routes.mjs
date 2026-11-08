@@ -5,6 +5,9 @@ import { z } from 'zod';
 import { liveQuote, simulatedQuote } from '../../chain/trade.mjs';
 import { planRouter } from '../../chain/router-plan.mjs';
 import { PAD_SUPPORT, PAD_SUPPORT_CHECKED, usable } from './pad-support.mjs';
+import { readRouterSnapshot, RouterReadError } from '../../chain/router-reads.mjs';
+import { prepareRouterAction } from '../../chain/router-actions.mjs';
+import { readFileSync } from 'node:fs';
 import { AgoraError, createAgoraClient } from '../../chain/agora.mjs';
 import { Interface, formatUnits } from 'ethers';
 
@@ -18,8 +21,9 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
   const send = (event, data, owner = null) => {
     for (const [res, address] of clients) if (!owner || owner === address) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
   };
-  const fail = (status, message) => { const e = new Error(message); e.status = status; throw e; };
-  const json = (fn) => async (req, res, next) => { try { res.json(await fn(req, res)); } catch (e) { next(e); } };
+  // Deliberate refusals carry `expose`: their message is shown even for 5xx. Crashes are not.
+  const fail = (status, message, code) => { const e = new Error(message); e.status = status; e.code = code; e.expose = true; throw e; };
+  const json = (fn) => async (req, res, next) => { try { res.json(await fn(req, res)); } catch (e) { if (e.expose && e.status) res.status(e.status).json({ error: e.message, ...(e.code ? { code: e.code } : {}) }); else next(e); } };
   const who = (req) => { try { return auth(req)?.address ?? null; } catch { return null; } };
   const need = (req) => who(req) ?? fail(401, 'Connect a wallet first.');
   const launchOr404 = (address) => { if (!isAddress(address)) fail(400, 'A valid token address is required.'); return store.getRaw(address) ?? fail(404, 'This launch is not indexed.'); };
@@ -128,6 +132,24 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
 
   r.post('/router/plan', express.json(), json(async (req) => planRouter(provider, config, req.body ?? {})));
   r.get('/router/pads', json(() => ({ checked: PAD_SUPPORT_CHECKED, pads: PAD_SUPPORT.map((p) => ({ ...p, usable: usable(p) })) })));
+  // Router status from confirmed chain state. The simulated preview serves one
+  // labelled sample router so screens can be built before anything is deployed.
+  const sampleRouter = JSON.parse(readFileSync(new URL('../../fixtures/router.sample.json', import.meta.url), 'utf8'));
+  const routerError = (e) => { if (e instanceof RouterReadError) fail(e.status, e.message, e.code); throw e; };
+  r.get('/router/:address', json(async (req) => {
+    if (!isAddress(req.params.address)) fail(400, 'A valid router address is required.');
+    if (!config.live || !provider) {
+      if (req.params.address.toLowerCase() === sampleRouter.router) return sampleRouter;
+      fail(503, 'Router status needs a live Elysium connection. This preview only has the sample router.');
+    }
+    try { return await readRouterSnapshot(provider, config, req.params.address); } catch (e) { return routerError(e); }
+  }));
+  r.post('/router/:address/prepare', express.json(), json(async (req) => {
+    if (!isAddress(req.params.address)) fail(400, 'A valid router address is required.');
+    if (!config.live || !provider) fail(503, 'Preparing router transactions needs a live Elysium connection.');
+    const from = req.body?.from ?? who(req);
+    try { return await prepareRouterAction(provider, config, req.params.address, { action: req.body?.action, from, params: req.body?.params ?? {} }); } catch (e) { return routerError(e); }
+  }));
 
   r.get('/stream', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });

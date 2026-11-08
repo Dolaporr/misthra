@@ -1,0 +1,266 @@
+{
+  "_note": "SIMULATED sample router snapshot for UI development, recorded from a local test chain with addresses replaced. Not a real router.",
+  "source": "simulated",
+  "network": {
+    "chainId": 99901,
+    "verified": null
+  },
+  "asOf": {
+    "block": 1070000,
+    "timestamp": 1794225600000,
+    "confirmations": 20
+  },
+  "router": "0xb1aa81306128a0dc9b782556aa054917c98d5992",
+  "status": "ok",
+  "reason": null,
+  "verification": {
+    "factory": "0xd87778296be76891afb79b4184f9685ff45b3d2c",
+    "implementation": "0x34e3966cc72e5285ceb0107fb08705bef9d128c3",
+    "codeMatchesClone": true,
+    "configHash": "0x0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "creator": "0xd4259a44aec1fdb12714b3413963a97cb77398f0",
+  "protocolFeeRecipient": "0xf2fcec73591a9dfb4eab733528d0a3e0c14c577e",
+  "protocolFeeBps": 100,
+  "whype": "0x315e4d579e725d3a7eb4ef909782bdc6c814a00f",
+  "launchpadAdapter": "0x0000000000000000000000000000000000000000",
+  "bound": true,
+  "subject": "0xed005eee448118ec3942b8fd71ddb38ae43134fd",
+  "assets": {
+    "0x0000000000000000000000000000000000000000": {
+      "symbol": "HYPE",
+      "decimals": 18,
+      "kind": "native"
+    },
+    "0x315e4d579e725d3a7eb4ef909782bdc6c814a00f": {
+      "symbol": "WHYPE",
+      "decimals": 18,
+      "kind": "whype"
+    },
+    "0xed005eee448118ec3942b8fd71ddb38ae43134fd": {
+      "symbol": "HLCN",
+      "decimals": 18,
+      "kind": "subject"
+    }
+  },
+  "intake": [
+    {
+      "kind": "fixed",
+      "token": "0x315e4d579e725d3a7eb4ef909782bdc6c814a00f",
+      "resolved": "0x315e4d579e725d3a7eb4ef909782bdc6c814a00f"
+    },
+    {
+      "kind": "subject",
+      "token": "0x0000000000000000000000000000000000000000",
+      "resolved": "0xed005eee448118ec3942b8fd71ddb38ae43134fd"
+    }
+  ],
+  "buckets": [
+    {
+      "id": 0,
+      "output": {
+        "kind": "fixed",
+        "token": "0x315e4d579e725d3a7eb4ef909782bdc6c814a00f"
+      },
+      "resolvedOutput": "0x315e4d579e725d3a7eb4ef909782bdc6c814a00f",
+      "bps": 5000,
+      "route": {
+        "adapter": "0x0000000000000000000000000000000000000000",
+        "priceGuard": "0x0000000000000000000000000000000000000000",
+        "routeData": "0x",
+        "maxAmountInPerCall": "1000000000000000000000000"
+      },
+      "inputOwed": "0",
+      "allocations": [
+        {
+          "id": 0,
+          "key": 0,
+          "destination": "0xd4259a44aec1fdb12714b3413963a97cb77398f0",
+          "bps": 10000,
+          "isSink": false,
+          "creatorMayRepoint": true,
+          "owed": "990000000000000000"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "output": {
+        "kind": "native",
+        "token": "0x0000000000000000000000000000000000000000"
+      },
+      "resolvedOutput": "0x0000000000000000000000000000000000000000",
+      "bps": 2000,
+      "route": {
+        "adapter": "0xa2dab7245127477c1a8c955791e4a44acf67431a",
+        "priceGuard": "0x0000000000000000000000000000000000000000",
+        "routeData": "0x",
+        "maxAmountInPerCall": "1000000000000000000000000"
+      },
+      "inputOwed": "0",
+      "allocations": [
+        {
+          "id": 0,
+          "key": 256,
+          "destination": "0x2617a6437247b53e5e6677f079b82a9db65c8255",
+          "bps": 10000,
+          "isSink": false,
+          "creatorMayRepoint": false,
+          "owed": "396000000000000000"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "output": {
+        "kind": "subject",
+        "token": "0x0000000000000000000000000000000000000000"
+      },
+      "resolvedOutput": "0xed005eee448118ec3942b8fd71ddb38ae43134fd",
+      "bps": 3000,
+      "route": {
+        "adapter": "0xa2dab7245127477c1a8c955791e4a44acf67431a",
+        "priceGuard": "0x67218a89b2b9eaaa4bd6fa17ffd4acd205d53edc",
+        "routeData": "0x0000000000000000000000000000000000000000000000000000000000000bb8",
+        "maxAmountInPerCall": "1000000000000000000000000"
+      },
+      "inputOwed": "0",
+      "allocations": [
+        {
+          "id": 0,
+          "key": 512,
+          "destination": "0x000000000000000000000000000000000000dead",
+          "bps": 10000,
+          "isSink": false,
+          "creatorMayRepoint": false,
+          "owed": "594000000000000000000"
+        }
+      ]
+    }
+  ],
+  "money": [
+    {
+      "asset": "0x0000000000000000000000000000000000000000",
+      "balance": "396000000000000000",
+      "liability": "396000000000000000",
+      "unaccounted": "0",
+      "protocolOwed": "0",
+      "insolvent": false
+    },
+    {
+      "asset": "0x315e4d579e725d3a7eb4ef909782bdc6c814a00f",
+      "balance": "1010000000000000000",
+      "liability": "1010000000000000000",
+      "unaccounted": "0",
+      "protocolOwed": "20000000000000000",
+      "insolvent": false
+    },
+    {
+      "asset": "0xed005eee448118ec3942b8fd71ddb38ae43134fd",
+      "balance": "594000000000000000000",
+      "liability": "594000000000000000000",
+      "unaccounted": "0",
+      "protocolOwed": "0",
+      "insolvent": false
+    }
+  ],
+  "wallets": [
+    {
+      "recipient": "0xd4259a44aec1fdb12714b3413963a97cb77398f0",
+      "asset": "0x315e4d579e725d3a7eb4ef909782bdc6c814a00f",
+      "owed": "990000000000000000"
+    },
+    {
+      "recipient": "0x2617a6437247b53e5e6677f079b82a9db65c8255",
+      "asset": "0x0000000000000000000000000000000000000000",
+      "owed": "396000000000000000"
+    },
+    {
+      "recipient": "0x000000000000000000000000000000000000dead",
+      "asset": "0xed005eee448118ec3942b8fd71ddb38ae43134fd",
+      "owed": "594000000000000000000"
+    }
+  ],
+  "sinks": [],
+  "actions": [
+    {
+      "action": "bind",
+      "who": "creator",
+      "enabled": false,
+      "reason": "The launched token is already bound; binding happens once."
+    },
+    {
+      "action": "sendWallet",
+      "who": "anyone",
+      "params": {
+        "recipient": "0xd4259a44aec1fdb12714b3413963a97cb77398f0",
+        "asset": "0x315e4d579e725d3a7eb4ef909782bdc6c814a00f"
+      },
+      "amount": "990000000000000000",
+      "enabled": true,
+      "reason": null
+    },
+    {
+      "action": "sendWallet",
+      "who": "anyone",
+      "params": {
+        "recipient": "0x2617a6437247b53e5e6677f079b82a9db65c8255",
+        "asset": "0x0000000000000000000000000000000000000000"
+      },
+      "amount": "396000000000000000",
+      "enabled": true,
+      "reason": null
+    },
+    {
+      "action": "sendWallet",
+      "who": "anyone",
+      "params": {
+        "recipient": "0x000000000000000000000000000000000000dead",
+        "asset": "0xed005eee448118ec3942b8fd71ddb38ae43134fd"
+      },
+      "amount": "594000000000000000000",
+      "enabled": true,
+      "reason": null
+    },
+    {
+      "action": "sendProtocolFee",
+      "who": "anyone",
+      "params": {
+        "asset": "0x315e4d579e725d3a7eb4ef909782bdc6c814a00f"
+      },
+      "amount": "20000000000000000",
+      "enabled": true,
+      "reason": null
+    },
+    {
+      "action": "repointWallet",
+      "who": "creator",
+      "params": {
+        "bucket": 0,
+        "allocation": 0
+      },
+      "enabled": true,
+      "reason": null
+    },
+    {
+      "action": "repointWallet",
+      "who": "creator",
+      "params": {
+        "bucket": 1,
+        "allocation": 0
+      },
+      "enabled": false,
+      "reason": "This destination was fixed when the router was deployed."
+    },
+    {
+      "action": "repointWallet",
+      "who": "creator",
+      "params": {
+        "bucket": 2,
+        "allocation": 0
+      },
+      "enabled": false,
+      "reason": "This destination was fixed when the router was deployed."
+    }
+  ]
+}

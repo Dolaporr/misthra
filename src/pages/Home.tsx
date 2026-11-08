@@ -1,12 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { ArrowDown, ArrowRight, ArrowUpRight, Pause, Play } from 'lucide-react';
-import { useResource } from '../state';
 import {scrollVideoProgress,scrollVideoTime,videoUnavailable} from '../lib/scroll-video';
-import { money } from '../api';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
-import { ConnectionScene } from '../components/ConnectionScene';
-import type { Mission } from '../types';
-import { Empty, ErrorState, Loading } from '../components/ui';
 
 const poster='/media/misthra-agent-dark-poster.jpg';
 
@@ -70,35 +65,25 @@ function AgentFilm({sceneRef}:{sceneRef:RefObject<HTMLDivElement|null>}) {
 export function Home() {
   const reduce=useReducedMotion();
   const sceneRef=useRef<HTMLDivElement>(null);
-  const {data,loading,error,reload}=useResource<Mission[]>('/missions?sort=newest');
-  const missions=data?.filter(m=>['open','picking'].includes(m.phase)&&m.deadline>Date.now()).slice(0,3);
   return <div className="landing-page">
-    <div className="landing-scene" ref={sceneRef}><AgentFilm sceneRef={sceneRef}/><div className="landing-story"><section className="landing-hero" aria-labelledby="landing-title">
-      <div className="landing-copy">
-        <h1 id="landing-title">{['Good work.','Earned rewards.'].map((line,index)=><motion.span key={line} initial={reduce?false:{clipPath:'inset(0 0 100% 0)',y:14}} animate={{clipPath:'inset(0 0 0% 0)',y:0}} transition={{duration:.65,delay:.08+index*.09,ease:[.16,1,.3,1]}}>{line}</motion.span>)}</h1>
-        <motion.p initial={reduce?false:{opacity:.45}} animate={{opacity:1}} transition={{duration:.5,delay:.24}}>Trade new launches, route your launch fees,<br/>and hire agents. All on Elysium.</motion.p>
-        <motion.div className="landing-actions" initial={reduce?false:{opacity:.5,y:6}} animate={{opacity:1,y:0}} transition={{duration:.4,delay:.32}}><a className="landing-primary" href="#/terminal">Open the terminal <ArrowUpRight size={18}/></a><a className="landing-secondary" href="#/launch">Launch with a fee router <ArrowRight size={17}/></a></motion.div>
-      </div>
-      <div className="hero-colophon"><p>Terminal, launch router and agent exchange on Elysium.</p><a href="#sections">See what is inside <ArrowDown size={15}/></a></div>
-    </section>
-
-    <section className="landing-work" id="sections" aria-labelledby="sections-title">
-      <div className="landing-section-heading"><div><h2 id="sections-title">Three ways in.</h2><p>One wallet, one place, three jobs.</p></div></div>
-      <div className="landing-missions">{[
-        ['#/terminal','Terminal','Every new HYPE pool on Elysium in three columns, with safety checks, traction and a buy flow you sign yourself.'],
-        ['#/launch','Launch','Name a fee router as your token’s fee recipient and split fees to wallets or into buyback-and-burn by fixed rules.'],
-        ['#/board','Agents','Post a mission, let agents deliver, and pay only for the work you accept.'],
-      ].map(([href,title,text])=><a className="mission-preview-row" key={href} href={href}><div><span className="preview-category">{title}</span><h3>{text}</h3></div><ArrowUpRight className="preview-arrow" size={22}/></a>)}</div>
-    </section>
-
-    <section className="landing-work" aria-labelledby="open-work-title">
-      <div className="landing-section-heading"><div><h2 id="open-work-title">An idea, meet a skill.</h2><p>Research, code, design. Find a brief worth taking on.</p></div><a className="landing-secondary" href="#/board">All missions <ArrowUpRight size={18}/></a></div>
-      <div className="landing-missions">{loading?<Loading text="Finding open missions…"/>:error?<ErrorState error={error} retry={reload}/>:missions?.length?missions.map(m=><a className="mission-preview-row" key={m.id} href={`#/b/${m.id}`}>
-        <div><span className="preview-category">{m.category}{m.mode==='competition'?' · Competition':''}{m.sample?' · Sample':''}</span><h3>{m.title}</h3></div><span className="preview-reward">{money(m.reward)}<small>HYPE reward</small></span><ArrowUpRight className="preview-arrow" size={22}/>
-      </a>):<Empty title="Make room for your next idea"><p>Post the first mission on this local board.</p><a className="landing-secondary" href="#/post">Write a brief <ArrowRight size={16}/></a></Empty>}</div>
-      <div className="landing-work-note"><span>Clear briefs. Agreed rewards. Results you review.</span><a href="#/guide">How it works <ArrowUpRight size={15}/></a></div>
-    </section>
-
-    </div></div><ConnectionScene/>
+    <div className="landing-scene" ref={sceneRef}><AgentFilm sceneRef={sceneRef}/><div className="landing-story">
+      <section className="landing-hero" aria-labelledby="landing-title"><div className="landing-copy">
+        <h1 id="landing-title">{['Control where','launch fees go.'].map((line,index)=><motion.span key={line} initial={reduce?false:{clipPath:'inset(0 0 100% 0)',y:14}} animate={{clipPath:'inset(0 0 0% 0)',y:0}} transition={{duration:.65,delay:.08+index*.09,ease:[.16,1,.3,1]}}>{line}</motion.span>)}</h1>
+        <motion.p initial={reduce?false:{opacity:.45}} animate={{opacity:1}} transition={{duration:.5,delay:.24}}>A fee router sends your launch’s fees to wallets or buyback-and-burn, using the split you set.</motion.p>
+        <motion.div className="landing-actions" initial={reduce?false:{opacity:.5,y:6}} animate={{opacity:1,y:0}} transition={{duration:.4,delay:.32}}><a className="landing-primary" href="#/launch">Set up a fee router <ArrowUpRight size={18}/></a><a className="landing-secondary" href="#/terminal">Open the terminal <ArrowRight size={17}/></a></motion.div>
+      </div><div className="hero-colophon"><p>Fee control for Elysium launches.</p><button className="home-section-link" onClick={()=>{const section=document.getElementById('sections');section?.scrollIntoView({behavior:reduce?'auto':'smooth'});section?.focus({preventScroll:true})}}>See how it works <ArrowDown size={15}/></button></div></section>
+      <section className="landing-work home-router-steps" id="sections" tabIndex={-1} aria-labelledby="sections-title"><div className="landing-section-heading"><div><h2 id="sections-title">Set the split.<br/>Keep the rules clear.</h2><p>A fixed 1% protocol fee is taken first. Your rules distribute the remaining fees.</p></div></div>
+        <div className="landing-missions">{[
+          ['Choose the split','Send fees to creator or team wallets, unwrap them to native HYPE, or use a guarded buyback-and-burn.'],
+          ['Review the plan','Check the shares, wallet addresses and deployment steps before asking your wallet to sign.'],
+          ['Connect your launch','Use the router as your launchpad’s fee recipient, where custom fee recipients are supported.'],
+        ].map(([title,text])=><a className="mission-preview-row home-route-row" key={title} href="#/launch"><div><h3>{title}</h3><p>{text}</p></div><ArrowUpRight className="preview-arrow" size={19}/></a>)}</div>
+      </section>
+      <section className="landing-work home-product-links" aria-labelledby="product-links-title"><div className="landing-section-heading"><div><h2 id="product-links-title">For the launch.<br/>And the work around it.</h2></div></div><div className="landing-missions">{[
+        ['#/launch','Launch','Configure the fee router for your launch.'],
+        ['#/terminal','Terminal','Explore indexed pools, read the available checks and review a quote.'],
+        ['#/board','Agents','Find help with research, code and design through paid missions.'],
+      ].map(([href,title,text])=><a className="mission-preview-row home-route-row" key={href} href={href}><div><h3>{title}</h3><p>{text}</p></div><ArrowUpRight className="preview-arrow" size={19}/></a>)}</div><div className="landing-work-note"><span>Quotes and launch data are marked live or simulated in the terminal.</span><a href="#/terminal">Explore the terminal <ArrowUpRight size={15}/></a></div></section>
+    </div></div>
   </div>;
 }

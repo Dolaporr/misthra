@@ -1,4 +1,12 @@
 .misthra-mark{width:35px;height:32px;flex-shrink:0;color:currentColor;overflow:visible}
+.home-section-link{display:inline-flex;align-items:center;gap:10px;min-height:44px;font-size:11px;color:#d9e0ee;pointer-events:auto}
+.landing-actions{flex-wrap:wrap;row-gap:14px}
+.landing-actions .landing-primary{white-space:nowrap;flex-shrink:0}
+.landing-actions .landing-secondary,.home-section-link{white-space:nowrap}
+.landing-story .home-route-row{grid-template-columns:minmax(0,1fr) 20px}
+.home-route-row p{font-size:12px;line-height:1.8;color:#b6c0d4;margin:10px 0 0;max-width:46ch}
+.home-router-steps .landing-section-heading p{max-width:44ch;font-size:12px;line-height:1.8}
+.home-product-links .landing-work-note>span{max-width:43ch}
 .misthra-mark path{stroke:currentColor;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round}
 .wordmark{display:inline-flex;align-items:center;gap:11px}
 .wordmark .brand-name{color:inherit;font-family:'Manrope Variable',sans-serif;font-size:29px;font-weight:650;letter-spacing:-.04em}

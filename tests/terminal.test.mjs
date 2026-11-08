@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { createApp } from '../server/app.mjs';
 import fixtureData from '../fixtures/launches.sample.json' with { type: 'json' };
 
-const LAUNCH_KEYS = ['address', 'name', 'symbol', 'decimals', 'image', 'pad', 'stage', 'createdAt', 'createdBlock', 'creator', 'pool', 'priceHype', 'mcapHype', 'liquidityHype', 'volume5mHype', 'volume24hHype', 'txCount24h', 'traders24h', 'holders', 'top10Pct', 'change5mPct', 'change1hPct', 'traction', 'safety', 'ai', 'router', 'links'];
+const LAUNCH_KEYS = ['address', 'name', 'symbol', 'decimals', 'image', 'pad', 'stage', 'createdAt', 'createdBlock', 'creator', 'pool', 'priceHype', 'mcapHype', 'liquidityHype', 'volume5mHype', 'volume24hHype', 'txCount24h', 'traders24h', 'holders', 'top10Pct', 'change5mPct', 'change1hPct', 'traction', 'safety', 'ai', 'router', 'links', 'trade', 'feeRecipient'];
 
 async function terminal(t) {
   const directory = await mkdtemp(join(tmpdir(), 'misthra-terminal-'));

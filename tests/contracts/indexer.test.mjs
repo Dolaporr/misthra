@@ -139,6 +139,10 @@ test('indexer reads Montra v4 launches and swaps, attributes them to Montra, and
   assert.ok(raw.liquidityHype > 0, 'active liquidity estimated from the swap');
   const view = store.list(config, { limit: 10 }).find((l) => l.address === token);
   assert.equal(view.pad.name, 'Montra');
+  assert.equal(view.pool.quote, 'HYPE');
+  assert.equal(view.trade.misthra, false);
+  assert.match(view.trade.reason, /Uniswap v4.*Trade it on Montra/);
+  assert.equal(view.trade.venueUrl, 'https://montramarkets.xyz');
   const trades = store.trades(token, 10);
   assert.equal(trades.length, 2);
   const buy = trades.find((x) => x.side === 'buy'), sell = trades.find((x) => x.side === 'sell');

@@ -75,7 +75,7 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
     }
     const launch = store.toApi(raw, config);
     const reason = !config.live ? undefined
-      : !tradable ? 'This pool is on another DEX deployment. Trade it on its launchpad; Misthra shows it for research only.'
+      : !tradable ? store.toApi(raw, config).trade.reason
       : 'Trading is not switched on yet: the Misthra trade gateway or quoter address is not configured.';
     const quote = simulatedQuote({ ...body, priceHype: launch.priceHype, liquidityHype: launch.liquidityHype, feeBps: config.tradeFeeBps });
     return { source: 'simulated', via: 'simulated', approvals: [], ...quote, reason: reason ?? quote.reason };

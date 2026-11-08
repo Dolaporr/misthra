@@ -18,6 +18,18 @@ export function decimal(x) {
   return x.toFixed(digits).replace(/\.?0+$/, '');
 }
 
+// Whether Misthra's own buy/sell route can trade this launch, and if not, why.
+// Mirrors the gateway check in routes.mjs (/trade/quote route 1).
+export function tradeAvailability(raw, config, pad) {
+  if (raw.source === 'simulated' || !config.live) return { misthra: false, reason: 'Simulated launch: paper trading only.', venueUrl: null };
+  const v3Canonical = raw.pool?.venue === 'uniswap-v3' && (!raw.pool.factory || raw.pool.factory === config.v3Factory) && (!raw.pool.quote || raw.pool.quote === config.whype);
+  if (v3Canonical && config.tradeReady) return { misthra: true, reason: null, venueUrl: null };
+  if (v3Canonical) return { misthra: false, reason: 'Trading switches on once the Misthra trade gateway is deployed.', venueUrl: pad?.url ?? null };
+  const where = pad?.name ? `on ${pad.name}` : 'on its launchpad';
+  const why = raw.pool?.venue === 'uniswap-v4' ? 'This coin trades on Uniswap v4, which Misthra cannot route yet.' : 'This pool is on another DEX deployment.';
+  return { misthra: false, reason: `${why} Trade it ${where}.`, venueUrl: pad?.url ?? null };
+}
+
 export function createTerminalStore(db, { now = () => Date.now() } = {}) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS t_launches (address TEXT PRIMARY KEY, data TEXT NOT NULL, created_at INTEGER NOT NULL, source TEXT NOT NULL);
@@ -122,7 +134,9 @@ export function createTerminalStore(db, { now = () => Date.now() } = {}) {
         address: raw.address, name: raw.name, symbol: raw.symbol, decimals: raw.decimals ?? 18, image: raw.image ?? null,
         pad: pad ? { id: pad.id, name: pad.name, url: pad.url ?? null } : null,
         stage: store.stage(raw, m, config, at), createdAt: raw.createdAt, createdBlock: raw.createdBlock ?? 0, creator: raw.creator,
-        pool: { address: raw.pool.address, venue: raw.pool.venue, fee: raw.pool.fee ?? null, quote: 'WHYPE' },
+        pool: { address: raw.pool.address, venue: raw.pool.venue, fee: raw.pool.fee ?? null, poolId: raw.pool.poolId ?? null, quote: raw.pool.quote === '0x0000000000000000000000000000000000000000' ? 'HYPE' : 'WHYPE' },
+        trade: tradeAvailability(raw, config, pad),
+        feeRecipient: raw.feeRecipient ?? null,
         priceHype: decimal(m.price ?? 0), mcapHype: decimal(m.mcap ?? 0), liquidityHype: decimal(raw.liquidityHype ?? 0),
         volume5mHype: decimal(m.volume5m), volume24hHype: decimal(m.volume24h), txCount24h: m.txCount24h, traders24h: m.traders24h,
         holders: m.holders, top10Pct: m.top10Pct, change5mPct: m.change5m, change1hPct: m.change1h,

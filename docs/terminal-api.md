@@ -2,7 +2,7 @@
 
 Shared contract between the backend (Claude) and the frontend (Codex). Base path `/api`, JSON, cookie session as today (`credentials: 'include'`). Amounts are **decimal strings** in HYPE (18 decimals) unless named `*Usd`. Times are Unix milliseconds. Addresses are lowercase hex.
 
-Liquidity is the WHYPE side of the pool counted twice, a common convention. Holder counts are exact only for tokens created inside the indexed range.
+Liquidity is the HYPE side of the pool counted twice, a common convention. For Uniswap v4 pools (Montra) it is estimated from the pool's active liquidity at the last swap: depth near the price, not total value locked. Holder counts are exact only for tokens created inside the indexed range.
 
 Until the indexer is connected to an Elysium RPC, every endpoint serves the simulated feed with `source: "simulated"`. The sample shapes live in `fixtures/launches.sample.json`.
 
@@ -26,7 +26,12 @@ type Traction = { score: number; up: string[]; down: string[] };          // 0â€
 type AiRead = { grade: 'A'|'B'|'C'|'D'|'F'; verdict: 'buy'|'watch'|'avoid'; summary: string; thesis: string;
                 risks: string[]; model: string; readAt: number } | null;   // null = not read / AI not configured
 type Pad = { id: string; name: string; url: string | null } | null;          // null = pool not attributed to a known pad
-type Pool = { address: string; venue: 'uniswap-v3' | 'uniswap-v2'; fee: number | null; quote: 'WHYPE' };
+type Pool = { address: string;                       // v4: the PoolManager (shared by every v4 pool)
+              venue: 'uniswap-v3' | 'uniswap-v4' | 'uniswap-v2'; fee: number | null;
+              poolId: string | null;                  // v4 pool id; null for v3
+              quote: 'WHYPE' | 'HYPE' };              // v4 pools can be quoted in native HYPE
+// Can Misthra's own buy/sell route trade it? If not, say why and link the pad.
+type TradeAvailability = { misthra: boolean; reason: string | null; venueUrl: string | null };
 type RouterRef = { address: string; buckets: { label: string; bps: number }[] } | null;
 
 type Launch = {
@@ -39,7 +44,9 @@ type Launch = {
   holders: number; top10Pct: number | null;           // % of supply in the 10 largest non-pool, non-burn holders
   change5mPct: number | null; change1hPct: number | null;
   traction: Traction | null; safety: Safety; ai: AiRead; router: RouterRef;
-  links: { explorer: string; pad: string | null; pool: string };
+  links: { explorer: string; pad: string | null; pool: string | null };   // pool is null for v4
+  trade: TradeAvailability;
+  feeRecipient: string | null;                        // creator-fee recipient when the pad's launch event names it (Montra)
 };
 ```
 

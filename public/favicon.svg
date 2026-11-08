@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <title>Misthra</title>
+  <rect width="128" height="128" rx="26" fill="#0c0f16"/>
+  <g transform="translate(20 19.12) scale(.88)" fill="#eef1f7">
+    <path d="M43,0A43,43 0 0 0 43,86V60A17,17 0 0 1 43,26Z"/>
+    <path d="M57,16A43,43 0 0 1 57,102V76A17,17 0 0 0 57,42Z"/>
+  </g>
+</svg>

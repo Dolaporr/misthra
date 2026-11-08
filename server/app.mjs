@@ -79,9 +79,13 @@ export function createApp({dbPath='data/errand.sqlite',mode='demo',now=()=>Date.
   const getAuth=req=>{state=read();return authenticate(req);};
   const session=(res,a,role)=>{ensureAccount(a);const token=randomBytes(32).toString('base64url');state.sessions[hash(token)]={address:a,role,expiresAt:time()+7*DAY};res.cookie('errand_session',token,{httpOnly:true,sameSite:'lax',secure:process.env.APP_ORIGIN?.startsWith('https://')||false,maxAge:7*DAY,path:'/'});return {address:a,token,role};};
   const app=express();app.disable('x-powered-by');app.locals.close=()=>{app.locals.terminal?.close();db.close();};app.locals.snapshot=read;
-  const appOrigin=process.env.APP_ORIGIN||'http://127.0.0.1:5173';
-  const origins=new Set([appOrigin,'http://localhost:5173','http://127.0.0.1:5173','http://localhost:4317','http://127.0.0.1:4317']);
-  app.use((req,res,next)=>{const origin=req.headers.origin;const host=req.headers.host||'';const self=/^(127\.0\.0\.1|localhost):\d+$/.test(host)?`http://${host}`:null;if(origin&&!origins.has(origin)&&origin!==self)return res.status(403).json({error:'Origin is not permitted'});if(origin){res.set('Access-Control-Allow-Origin',origin);res.set('Access-Control-Allow-Credentials','true');res.vary('Origin');}res.set('X-Content-Type-Options','nosniff');res.set('Referrer-Policy','same-origin');if(req.method==='OPTIONS'){res.set('Access-Control-Allow-Headers','Content-Type, Authorization');res.set('Access-Control-Allow-Methods','GET, POST, OPTIONS');return res.sendStatus(204);}next();});
+  // APP_ORIGIN may list several origins, comma-separated (e.g. https://misthra.com,https://www.misthra.com).
+  const appOrigins=(process.env.APP_ORIGIN||'http://127.0.0.1:5173').split(',').map(o=>o.trim().replace(/\/+$/,'')).filter(Boolean);
+  const appOrigin=appOrigins[0];
+  const origins=new Set([...appOrigins,'http://localhost:5173','http://127.0.0.1:5173','http://localhost:4317','http://127.0.0.1:4317']);
+  // A page served by this server is always allowed to call it: same host as the request.
+  const sameHost=(origin,host)=>{try{return !!host&&new URL(origin).host===host;}catch{return false;}};
+  app.use((req,res,next)=>{const origin=req.headers.origin;const host=req.headers.host||'';if(origin&&!origins.has(origin)&&!sameHost(origin,host))return res.status(403).json({error:'Origin is not permitted'});if(origin){res.set('Access-Control-Allow-Origin',origin);res.set('Access-Control-Allow-Credentials','true');res.vary('Origin');}res.set('X-Content-Type-Options','nosniff');res.set('Referrer-Policy','same-origin');if(req.method==='OPTIONS'){res.set('Access-Control-Allow-Headers','Content-Type, Authorization');res.set('Access-Control-Allow-Methods','GET, POST, OPTIONS');return res.sendStatus(204);}next();});
   app.use(express.json({limit:'128kb'}));
   const limited=new Map();const limit=(key,max=30)=>{const timestamp=time();let value=limited.get(key);if(!value||timestamp-value.at>60000){value={at:timestamp,count:0};limited.set(key,value);}if(++value.count>max)fail(429,'Too many requests; try again shortly');if(limited.size>5000)limited.clear();};
   const route=(method,path,fn)=>app[method](path,(req,res,next)=>{try{state=read();res.json(fn(req,res));}catch(e){next(e);}});

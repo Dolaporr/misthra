@@ -142,7 +142,8 @@
 .landing-story{margin-top:0}
 .landing-story .landing-work{background:rgba(12,15,22,.9)}
 .agent-stage .film-control{z-index:3;pointer-events:auto}
-.landing-copy h1{overflow:hidden}
+.landing-copy h1{overflow:visible}
+.landing-copy h1 span{padding-bottom:.16em;margin-bottom:-.16em}
 .is-home footer{position:relative;background:rgba(21,26,36,.97);padding-bottom:90px}
 .film-control-floating{position:fixed;z-index:8;bottom:22px;right:4.5vw;display:flex;gap:13px;align-items:center;pointer-events:auto}
 .film-control-floating button{background:#0c0f16f2;border:1px solid #35435e;padding:0 12px;color:#d9e0ee}

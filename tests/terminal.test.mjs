@@ -138,3 +138,21 @@ test('pad support is served with its confidence level', async (t) => {
   assert.equal(byId.ascend.buyback, 'no', 'Ascend pools are Uniswap v4');
   assert.equal(byId.kleos.usable, false);
 });
+
+test('router status: the sample router in preview, honest refusals otherwise', async (t) => {
+  const f = await terminal(t);
+  const sample = fixtureData.launches.find((l) => l.symbol === 'HLCN').router.address;
+  const ok = await f.req(`/api/router/${sample}`);
+  assert.equal(ok.status, 200);
+  assert.equal(ok.body.source, 'simulated');
+  assert.equal(ok.body.status, 'ok');
+  assert.ok(ok.body.buckets.length && ok.body.actions.length);
+  for (const m of ok.body.money) assert.match(m.balance, /^\d+$/, 'amounts are exact base-unit integers');
+  const other = await f.req('/api/router/0x0000000000000000000000000000000000000001');
+  assert.equal(other.status, 503);
+  assert.match(other.body.error, /needs a live Elysium connection/, 'the reason is shown, not hidden as a server error');
+  assert.equal((await f.req('/api/router/not-an-address')).status, 400);
+  const prep = await f.req(`/api/router/${sample}/prepare`, { action: 'sync', from: sample, params: {} });
+  assert.equal(prep.status, 503);
+  assert.match(prep.body.error, /live Elysium connection/);
+});

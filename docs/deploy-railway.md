@@ -47,6 +47,25 @@ The key never goes to Railway. Use a fresh deployer wallet with only enough HYPE
 2. Check the amount fields in `chain/agora.mjs` (`pick` lists) against `https://api.agoradex.app/api/v1/openapi.json`.
 3. Set `AGORA_API_KEY`, `AGORA_BUILDER_CODE`, `AGORA_ALLOWED_TARGETS` (Agora's router and swap executor, from their docs) and `AGORA_ENABLED=1`.
 
+## 5. Branded RPC (e.g. rpc.misthra.xyz)
+
+A second Railway service in the same project runs `rpc/`, a small JSON-RPC forwarder with failover. It is what wallets and the Misthra server talk to.
+
+1. **New service → GitHub repo → same repo and branch.** In the service's Settings, set **Config-as-code path** to `rpc/railway.json`.
+2. Variables:
+
+| Variable | Value |
+|---|---|
+| `RPC_UPSTREAMS` | Comma list in priority order: your provider URL with its key first (Alchemy, QuickNode…), then `https://rpc.agoradex.app` as the backup |
+| `EXPECTED_CHAIN_ID` | `99901` (any upstream answering another chain is excluded) |
+| `RPC_RATE_PER_SECOND` / `RPC_RATE_BURST` | Optional; defaults 25 / 100 per client IP |
+| `RPC_MAX_LOG_RANGE` | Optional; default 10,000 blocks per `eth_getLogs` |
+
+3. **Networking → Custom domain** `rpc.<your domain>` and add the CNAME Railway shows at your DNS provider.
+4. Point the main service at it: `ELYSIUM_RPC_URL=https://rpc.<your domain>` (or Railway's private address for this service, which skips the public rate limit).
+
+`GET /` shows each upstream's health and block height, never its URL. Signing, admin, debug and filter methods are refused. WebSocket subscriptions are not offered; clients poll.
+
 ## Notes
 
 - Fees: trades pay 0.75%, the same as Agora on Elysium (set at gateway deployment, capped at 1% in the contract). Fee routers pay 1% of creator fees. Both go to `MISTHRA_FEE_RECIPIENT`.

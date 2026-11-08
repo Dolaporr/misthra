@@ -31,7 +31,9 @@ Work on a branch `codex/<task>` cut from `terminal-router`, one PR per task back
 3. **Launch wizard polish.** Add a "Which launchpads support this?" panel from `GET /api/router/pads` (see `docs/terminal-api.md`): usable pads first, each with its note; say plainly that the list comes from the pads' docs and is not yet confirmed on-chain. If the user only picks pads where `buyback` is `no`, hide or disable the buyback-and-burn bucket with the reason. Add a preview line per bucket showing what 1 HYPE of fees becomes (after the 1% protocol fee).
 4. The open tasks in `docs/briefs/codex-frontend.md` → "Next frontend tasks" (SSE live updates, per-column filters, paper desk view, chart crosshair, accessibility pass), in that order, as time allows.
 
-Claude is doing in parallel (do not touch these files): a partner API for embedding the router planner on other sites (CORS, attribution), `GET /api/router/:address` for the router status page, and verifying the Agora field mapping. When the router status endpoint lands, task "Router status page" in the old brief becomes yours.
+**Ready for you (2026-11-08):** `GET /api/router/:address` and `POST /api/router/:address/prepare` are built and documented in `docs/terminal-api.md`, with `fixtures/router.sample.json` served by the preview for the sample router (HLCN's). Build the router status page `#/launch/:router` on them: buckets and destinations, money waiting per asset, what each wallet is owed, and the available actions as buttons that prepare, then send with the user's wallet, then wait for the receipt and re-read. Show each disabled action's `reason`.
+
+Claude is still doing (do not touch these files): the partner API for embedding the router planner on other sites (CORS, attribution) and verifying the Agora field mapping.
 
 ## Rules that still apply
 

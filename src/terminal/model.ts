@@ -9,7 +9,8 @@ export type Safety = { status: 'pass' | 'warn' | 'fail' | 'unchecked'; checks: C
 export type Traction = { score: number; up: string[]; down: string[] };
 export type AiRead = { grade: 'A' | 'B' | 'C' | 'D' | 'F'; verdict: 'buy' | 'watch' | 'avoid'; summary: string; thesis: string; risks: string[]; model: string; readAt: number } | null;
 export type Pad = { id: string; name: string; url: string | null } | null;
-export type Pool = { address: string; venue: 'uniswap-v3' | 'uniswap-v2'; fee: number | null; quote: 'WHYPE' };
+export type Pool = { address: string; venue: 'uniswap-v3' | 'uniswap-v4' | 'uniswap-v2'; fee: number | null; poolId: string | null; quote: 'HYPE' | 'WHYPE' };
+export type TradeAvailability = {misthra: boolean; reason: string | null; venueUrl: string | null};
 export type RouterRef = { address: string; buckets: { label: string; bps: number }[] } | null;
 export type Launch = {
   address: string; name: string; symbol: string; decimals: number; image: string | null;
@@ -18,6 +19,7 @@ export type Launch = {
   txCount24h: number; traders24h: number; holders: number; top10Pct: number | null;
   change5mPct: number | null; change1hPct: number | null;
   traction: Traction | null; safety: Safety; ai: AiRead; router: RouterRef;
+  trade: TradeAvailability; feeRecipient: string | null;
   links: { explorer: string | null; pad: string | null; pool: string | null };
 };
 export type Feed = { source: Source; networkVerified: boolean | null; tradeFeeBps: number; indexedBlock: number; updatedAt: number; pads: NonNullable<Pad>[]; launches: Launch[] };

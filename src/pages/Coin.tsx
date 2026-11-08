@@ -4,12 +4,16 @@ import { TradePanel } from '../terminal/TradePanel';
 import { CandleChart } from '../terminal/CandleChart';
 import { CoinPaperPosition } from '../terminal/PaperPositions';
 import { Empty } from '../components/ui';
+import {useApp} from '../state';
+import {PoolVenue} from '../terminal/PoolVenue';
+import {externalVenueUrl} from '../terminal/trade-access';
 import { SafetyIcon, SourceBadge } from './Terminal';
 import { STAGES, age, hype, pct, shortAddr, usePoll, type Bar, type Holder, type Launch, type Trade } from '../terminal/model';
 
 const TFS = ['15s', '1m', '5m', '15m', '1h'] as const;
 
 export function Coin({ address }: { address: string }) {
+  const {config}=useApp();
   const { data, error } = usePoll<{ source: string; launch: Launch }>(`/launches/${address}`, 4000);
   const [tf, setTf] = useState<(typeof TFS)[number]>('1m');
   const bars = usePoll<{ bars: Bar[] }>(`/launches/${address}/candles?tf=${tf}`, 5000).data?.bars ?? [];
@@ -21,14 +25,19 @@ export function Coin({ address }: { address: string }) {
   if (!data) return <div className="page-shell"><p className="muted">Loading launch…</p></div>;
   const l = data.launch;
   const stage = STAGES.find((s) => s.key === l.stage);
+  const feeExplorer=l.feeRecipient&&/^0x[0-9a-fA-F]{40}$/.test(l.feeRecipient)&&config?.network.explorerUrl?externalVenueUrl(config.network.explorerUrl.replace(/\/$/,'')+'/address/'+l.feeRecipient):null;
+  const routedByMisthra=Boolean(l.feeRecipient&&l.router&&l.feeRecipient.toLowerCase()===l.router.address.toLowerCase());
 
   return <div className="coin-page">
     <a className="back-link" href="#/terminal"><ArrowLeft size={15} /> Terminal</a>
+    <p className={data.source==='simulated'?'sim-note':'pulse-source-note'}>{data.source==='simulated'?'Simulated prices and activity. Paper trading only.':data.source==='live'?'Live Elysium indexer data. Trading availability depends on the pool.':'Data source unavailable. Trading is disabled.'}</p>
     <header className="coin-head">
       <span className="launch-avatar large" aria-hidden="true">{l.image ? <img src={l.image} alt="" /> : l.symbol.slice(0, 2)}</span>
       <div>
         <h1>{l.symbol} <span className="muted">{l.name}</span></h1>
-        <p className="coin-meta"><SourceBadge source={data.source} /><span className="badge">{l.pad?.name ?? 'Unknown pad'}</span>{stage && <span className="badge" title={stage.help}>{stage.label}</span>}<span className="muted">Created {age(l.createdAt)} ago</span><button className="copy" onClick={() => navigator.clipboard?.writeText(l.address)} title="Copy token address" aria-label={`Copy ${l.symbol} token address`}>{shortAddr(l.address)}</button></p>
+        <p className="coin-meta"><SourceBadge source={data.source} /><span className="badge">{l.pad?.name ?? 'Pad not detected'}</span><PoolVenue pool={l.pool}/>{stage && <span className="badge" title={stage.help}>{stage.label}</span>}<span className="muted">Created {age(l.createdAt)} ago</span><button className="copy" onClick={() => navigator.clipboard?.writeText(l.address)} title="Copy token address" aria-label={`Copy ${l.symbol} token address`}>{shortAddr(l.address)}</button></p>
+        {l.feeRecipient&&<p className="coin-fee-recipient">{routedByMisthra?<><RouteIcon size={13}/><a href={'#/launch/'+l.router!.address}>Fees routed by Misthra</a></>:<>Creator fees go to {feeExplorer?<a href={feeExplorer} target="_blank" rel="noopener noreferrer">{shortAddr(l.feeRecipient)}<ExternalLink size={11}/></a>:<code>{shortAddr(l.feeRecipient)}</code>}</>}</p>}
+        {l.pool.poolId&&<p className="coin-pool-id">Pool ID <code title={l.pool.poolId}>{shortAddr(l.pool.poolId)}</code><button className="copy" onClick={()=>navigator.clipboard?.writeText(l.pool.poolId!)} aria-label="Copy v4 pool ID">Copy</button></p>}
       </div>
       <div className="coin-price"><strong>{hype(l.priceHype, 5)} HYPE</strong><span className={(l.change1hPct ?? 0) >= 0 ? 'up' : 'down'}>{pct(l.change1hPct)} 1h</span><span className={(l.change5mPct ?? 0) >= 0 ? 'up' : 'down'}>{pct(l.change5mPct)} 5m</span></div>
       <nav className="coin-links" aria-label="External links">
@@ -45,7 +54,7 @@ export function Coin({ address }: { address: string }) {
           <CandleChart bars={bars} />
         </section>
         <dl className="coin-stats panel">
-          {[['Market cap', `${hype(l.mcapHype)} HYPE`], ['Liquidity', `${hype(l.liquidityHype)} HYPE`], ['5m volume', `${hype(l.volume5mHype)} HYPE`], ['24h volume', `${hype(l.volume24hHype)} HYPE`], ['24h trades', l.txCount24h], ['24h traders', l.traders24h], ['Holders', l.holders], ['Top 10', l.top10Pct == null ? '–' : `${l.top10Pct}%`]].map(([k, v]) => <div key={String(k)}><dt>{k}</dt><dd>{v}</dd></div>)}
+          {[['Market cap', `${hype(l.mcapHype)} HYPE`], [l.pool.venue==='uniswap-v4'?'Liquidity (est.)':'Liquidity', `${hype(l.liquidityHype)} HYPE`], ['5m volume', `${hype(l.volume5mHype)} HYPE`], ['24h volume', `${hype(l.volume24hHype)} HYPE`], ['24h trades', l.txCount24h], ['24h traders', l.traders24h], ['Holders', l.holders], ['Top 10', l.top10Pct == null ? '–' : `${l.top10Pct}%`]].map(([k, v]) => <div key={String(k)}><dt>{k}</dt><dd>{v}</dd></div>)}
         </dl>
         <section className="panel"><h2>Recent trades</h2>
           {!trades.length ? <p className="muted small">No trades recorded yet.</p> : <div className="coin-trades-scroll" tabIndex={0} role="region" aria-label="Recent trades table"><table className="mini-table"><caption className="sr-only">Recent indexed trades. Amounts in HYPE and token units.</caption><thead><tr><th scope="col">Age</th><th scope="col">Side</th><th scope="col">HYPE</th><th scope="col">Tokens</th><th scope="col">Trader</th></tr></thead><tbody>
@@ -54,7 +63,7 @@ export function Coin({ address }: { address: string }) {
         </section>
       </div>
       <aside className="coin-right">
-        <TradePanel launch={l} autoFocus={wantsBuy} />
+        <TradePanel launch={l} source={data.source} autoFocus={wantsBuy} />
         <CoinPaperPosition token={l.address}/>
         <section className="panel"><h2>Safety <SafetyIcon status={l.safety.status} /></h2>
           {!l.safety.checks.length ? <p className="muted small">Not checked yet.</p> : <ul className="checks">{l.safety.checks.map((c) => <li key={c.id} className={c.result}><strong>{c.label}</strong><span>{c.detail}</span></li>)}</ul>}

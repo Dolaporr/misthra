@@ -4,9 +4,12 @@ import {STAGES,age,hype,pct,type Launch,type Stage} from '../terminal/model';
 import {useLaunchFeed} from '../terminal/useLaunchFeed';
 import {blankFilters,hasFilters,loadColumnFilters,matchesLaunch,PRESETS,validFilters,type ColumnFilters,type Filters,type Preset} from '../terminal/pulse-filters';
 import '../terminal/pulse-next.css';
+import {PoolVenue} from '../terminal/PoolVenue';
+import {tradeAccess} from '../terminal/trade-access';
+import type {Source} from '../terminal/model';
 
 export function SourceBadge({ source }: { source?: string }) {
-  if (!source) return null;
+  if(source!=='live'&&source!=='simulated')return <span className="source-badge unavailable">Source unavailable</span>;
   return <span className={`source-badge ${source}`} title={source === 'live' ? 'Read from Elysium by the Misthra indexer' : 'Invented sample data for previewing the terminal. Not real launches.'}>{source === 'live' ? 'Live' : 'Simulated'}</span>;
 }
 
@@ -57,13 +60,14 @@ export function Terminal(){
       <div className="pulse-column-header"><h2 id={`col-${s.key}`}>{s.label}<span className="count">{byStage[s.key].length}</span></h2><button className="pulse-column-filter-toggle" aria-label={`${open[s.key]?'Hide':'Show'} ${s.label} filters`} aria-expanded={!!open[s.key]} aria-controls={`filters-${s.key}`} onClick={()=>setOpen(previous=>({...previous,[s.key]:!previous[s.key]}))}><SlidersHorizontal size={14}/>{column.active}{active&&<span className="pulse-filter-dot" aria-label="Filters active"/>}</button><button className="icon-button pulse-help-button" aria-label={`Explain ${s.label}`} aria-expanded={help===s.key} onClick={()=>setHelp(help===s.key?null:s.key)}><HelpCircle size={15}/></button></div>
       {help===s.key&&<p className="pulse-definition">{s.help}</p>}
       {open[s.key]&&<form className="column-filter-form" id={`filters-${s.key}`} aria-label={`${s.label} filters`} onSubmit={e=>e.preventDefault()}><label>Preset<select aria-label={`Preset for ${s.label}`} value={column.active} onChange={e=>preset(s.key,e.target.value as Preset)}>{PRESETS.map(p=><option key={p}>{p}</option>)}</select></label><label>Launchpad<select value={filters.pad} onChange={e=>update(s.key,{pad:e.target.value})}><option value="">All pads</option>{(data?.pads||[]).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label><label>Min liquidity (HYPE)<input inputMode="decimal" value={filters.minLiq} onChange={e=>update(s.key,{minLiq:e.target.value})} placeholder="Any"/></label><label>Min holders<input inputMode="numeric" value={filters.minHolders} onChange={e=>update(s.key,{minHolders:e.target.value})} placeholder="Any"/></label><label>Max age (hours)<input inputMode="decimal" value={filters.maxAgeH} onChange={e=>update(s.key,{maxAgeH:e.target.value})} placeholder="Any"/></label><label className="check"><input type="checkbox" checked={filters.hideFailed} onChange={e=>update(s.key,{hideFailed:e.target.checked})}/>Hide failed safety</label><p>Saved here for this column and preset.</p>{!validFilters(filters)&&<p className="error-text" role="alert">Use non-negative numbers and a whole number of holders.</p>}<button type="button" className="button subtle" onClick={()=>update(s.key,{...blankFilters})}>Reset {column.active}</button></form>}
-      <div className="pulse-list">{!data&&!error&&<p className="muted small pad">Loading launches…</p>}{data&&!byStage[s.key].length&&<p className="muted small pad">{active||q?'Nothing matches these filters.':'No launches here right now.'}</p>}{byStage[s.key].map(l=><LaunchCard key={l.address} launch={l} focused={focused===l.address}/>)}</div>
+      <div className="pulse-list">{!data&&!error&&<p className="muted small pad">Loading launches…</p>}{data&&!byStage[s.key].length&&<p className="muted small pad">{active||q?'Nothing matches these filters.':'No launches here right now.'}</p>}{byStage[s.key].map(l=><LaunchCard key={l.address} launch={l} source={data?.source} focused={focused===l.address}/>)}</div>
     </section>})}</div>
   </div>;
 }
 
-function LaunchCard({ launch: l, focused }: { launch: Launch; focused: boolean }) {
+function LaunchCard({ launch: l, focused, source }: { launch: Launch; focused: boolean; source?: Source }) {
   const href = `#/t/${l.address}`;
+  const access=tradeAccess(source,l.trade);
   return <article className={`launch-card${focused ? ' focused' : ''}${l.safety.status === 'fail' ? ' failed' : ''}`} data-launch={l.address} aria-describedby="pulse-source-note">
     <a className="launch-main" href={href} aria-label={`${l.symbol}, ${l.name}. Open launch details.`}>
       <span className="launch-avatar" aria-hidden="true">{l.image ? <img src={l.image} alt="" /> : l.symbol.slice(0, 2)}</span>
@@ -71,7 +75,8 @@ function LaunchCard({ launch: l, focused }: { launch: Launch; focused: boolean }
       <span className="launch-age" title={new Date(l.createdAt).toLocaleString()}>{age(l.createdAt)}</span>
     </a>
     <div className="launch-tags">
-      <span className="badge">{l.pad?.name ?? 'Unknown pad'}</span>
+      <span className="badge">{l.pad?.name ?? 'Pad not detected'}</span>
+      <PoolVenue pool={l.pool}/>
       <SafetyIcon status={l.safety.status} />
       {l.router && <span className="badge accent" title="Fees go to a Misthra fee router"><RouteIcon size={12} /> Router</span>}
       <span className={`grade ${l.ai ? `g-${l.ai.grade}` : 'none'}`} title={l.ai ? `${l.ai.verdict}: ${l.ai.summary}` : 'No AI read yet'}>{l.ai ? l.ai.grade : 'Not read'}</span>
@@ -79,12 +84,12 @@ function LaunchCard({ launch: l, focused }: { launch: Launch; focused: boolean }
     </div>
     <dl className="launch-stats">
       <div><dt>MC</dt><dd>{hype(l.mcapHype)}</dd></div>
-      <div><dt>Liq</dt><dd>{hype(l.liquidityHype)}</dd></div>
+      <div><dt>{l.pool.venue==='uniswap-v4'?'Liq (est.)':'Liq'}</dt><dd>{hype(l.liquidityHype)}</dd></div>
       <div><dt>5m vol</dt><dd>{hype(l.volume5mHype)}</dd></div>
       <div><dt>Holders</dt><dd>{l.holders}</dd></div>
       <div><dt>Top 10</dt><dd>{l.top10Pct == null ? '–' : `${l.top10Pct}%`}</dd></div>
       <div><dt>1h</dt><dd className={(l.change1hPct ?? 0) >= 0 ? 'up' : 'down'}>{pct(l.change1hPct)}</dd></div>
     </dl>
-    <a className="button primary buy" href={`${href}?buy=1`} aria-label={`Buy ${l.symbol}`}>Buy</a>
+    <a className={`button ${access.wallet?'primary':'secondary'} buy`} href={`${href}${access.quote?'?buy=1':''}`} aria-label={`${access.paper?'Paper trade':access.wallet?'Buy':'View'} ${l.symbol}`} title={access.reason||undefined}>{access.paper?'Paper':access.wallet?'Buy':'View'}</a>
   </article>;
 }

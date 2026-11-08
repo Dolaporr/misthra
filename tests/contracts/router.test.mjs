@@ -161,6 +161,28 @@ test('Misthra fee router: deterministic deployment, exact splits, guarded swaps,
     assert.equal((await router.allocationInfo(0, 0))[0], tm);
   });
 
+  await t.test('native HYPE fees are wrapped and synced; HYPE already owed stays put', async () => {
+    // Leave native HYPE owed to the team wallet: fund and process the native bucket, do not pay it.
+    await wait(deployer.sendTransaction({ to: W, value: E('1') }));
+    await wait(whype.transfer(await router.getAddress(), E('1')));
+    await wait(router['sync(address)'](W));
+    const nativeOwedInput = await router.bucketInputOwed(1, W);
+    await wait(router.processBucket(1, W, nativeOwedInput, 0, '0x'));
+    const owedToTeam = await router.walletOwed(tm, ZeroAddress);
+    assert.ok(owedToTeam > 0n);
+    const protocolBefore = await router.protocolOwed(W);
+    const bucket0Before = await router.bucketInputOwed(0, W);
+    // A pad pays 2 HYPE of creator fees in plain native HYPE.
+    await wait(deployer.sendTransaction({ to: await router.getAddress(), value: E('2') }));
+    await wait(router.connect(stranger)['sync(address)'](ZeroAddress));
+    assert.equal(await router.protocolOwed(W) - protocolBefore, E('0.02'));
+    assert.equal(await router.bucketInputOwed(0, W) - bucket0Before, E('0.99'));
+    assert.equal(await provider.getBalance(await router.getAddress()), owedToTeam, 'only the unowed HYPE was wrapped');
+    const before = await provider.getBalance(tm);
+    await wait(router.sendWallet(tm, ZeroAddress, owedToTeam));
+    assert.equal(await provider.getBalance(tm) - before, owedToTeam);
+  });
+
   await t.test('cumulative apportionment: many small syncs equal one large one', async () => {
     const make = async (label) => {
       const salt = keccak256(coder.encode(['string'], [label]));

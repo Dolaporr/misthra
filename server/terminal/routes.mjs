@@ -4,6 +4,7 @@ import { isAddress } from 'ethers';
 import { z } from 'zod';
 import { liveQuote, simulatedQuote } from '../../chain/trade.mjs';
 import { planRouter } from '../../chain/router-plan.mjs';
+import { PAD_SUPPORT, PAD_SUPPORT_CHECKED, usable } from './pad-support.mjs';
 import { AgoraError, createAgoraClient } from '../../chain/agora.mjs';
 import { Interface, formatUnits } from 'ethers';
 
@@ -126,6 +127,7 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
   r.delete('/alerts/:id', json((req) => { const owner = need(req); if (!store.deleteRule(owner, req.params.id)) fail(404, 'No such alert.'); return { ok: true }; }));
 
   r.post('/router/plan', express.json(), json(async (req) => planRouter(provider, config, req.body ?? {})));
+  r.get('/router/pads', json(() => ({ checked: PAD_SUPPORT_CHECKED, pads: PAD_SUPPORT.map((p) => ({ ...p, usable: usable(p) })) })));
 
   r.get('/stream', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });

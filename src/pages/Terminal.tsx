@@ -72,6 +72,7 @@ export function Terminal() {
       {active && <button type="button" className="button subtle" onClick={() => setFilters(blank)}>Clear</button>}
       <span className="muted small keys" aria-hidden="true"><kbd>j</kbd><kbd>k</kbd> move · <kbd>Enter</kbd> open</span>
     </form>
+    {data?.source === 'live' && data.networkVerified === false && <p className="sim-note" role="note">Live data, but these network settings are not yet confirmed by Kinetiq. Check any token on the explorer before trading.</p>}
     {data?.source === 'simulated' && <p className="sim-note">You are looking at simulated launches. Names, prices and trades are invented so the terminal can be previewed. Nothing here is on Elysium.</p>}
     {error && !data && <p className="error-text" role="alert">{error}</p>}
     <div className="pulse-tabs" role="tablist" aria-label="Stage">

@@ -12,5 +12,5 @@ console.log(`Terminal feed: ${elysium.live?`live Elysium indexer (chain ${elysiu
 const dist=resolve('dist');
 if(existsSync(dist)){app.use(express.static(dist));app.get('/{*path}',(req,res)=>res.sendFile(resolve(dist,'index.html')));}
 const host=process.env.HOST||'127.0.0.1',port=Number(process.env.PORT||4317);
-const server=app.listen(port,host,()=>console.log(`Errand for Elysium: http://${host}:${port} (${mode==='demo'?'simulated HYPE demo':'chain mode; requires escrow reconciliation for financial writes'})`));
+const server=app.listen(port,host,()=>console.log(`Misthra: http://${host}:${port} (${mode==='demo'?'simulated HYPE demo':'chain mode; requires escrow reconciliation for financial writes'})`));
 for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>server.close(()=>{app.locals.close();process.exit(0);}));

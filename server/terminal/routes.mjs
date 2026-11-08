@@ -28,7 +28,7 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
     // Configured pads in live mode; in the simulated preview, the sample pads present in the feed.
     const pads = config.pads.length ? config.pads.map((p) => ({ id: p.id, name: p.name, url: p.url }))
       : [...new Map(store.list(config, { limit: 200 }).filter((l) => l.pad).map((l) => [l.pad.id, l.pad])).values()];
-    return { source: source(), indexedBlock: Number(store.meta('idx.indexedBlock') ?? 0), updatedAt: now(), pads, launches };
+    return { source: source(), networkVerified: config.live ? config.networkVerified : null, tradeFeeBps: config.tradeFeeBps, indexedBlock: Number(store.meta('idx.indexedBlock') ?? 0), updatedAt: now(), pads, launches };
   }));
   r.get('/launches/:address', json((req) => ({ source: source(), launch: store.toApi(launchOr404(req.params.address), config) })));
   r.get('/launches/:address/candles', json((req) => { launchOr404(req.params.address); return { source: source(), bars: store.candles(req.params.address, req.query.tf) }; }));
@@ -41,13 +41,18 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
   r.post('/trade/quote', express.json(), json(async (req) => {
     const body = parse(quoteSchema, req.body);
     const raw = launchOr404(body.token);
-    if (config.tradeReady && provider) {
+    // Only pools on the canonical factory, quoted in the canonical WHYPE, can be
+    // traded through the gateway; others are shown but traded on their own pad.
+    const tradable = !raw.pool.factory || (raw.pool.factory === config.v3Factory && (!raw.pool.quote || raw.pool.quote === config.whype));
+    if (config.tradeReady && provider && tradable) {
       const quote = await liveQuote(provider, config, { ...body, wallet: body.wallet ?? who(req), fee: raw.pool.fee, decimals: raw.decimals, now: now() });
       return { source: 'live', ...quote };
     }
     const launch = store.toApi(raw, config);
-    const reason = config.live ? 'Swaps are not configured on this server (quoter or swap router address missing).' : undefined;
-    const quote = simulatedQuote({ ...body, priceHype: launch.priceHype, liquidityHype: launch.liquidityHype });
+    const reason = !config.live ? undefined
+      : !tradable ? 'This pool is on another DEX deployment. Trade it on its launchpad; Misthra shows it for research only.'
+      : 'Trading is not switched on yet: the Misthra trade gateway or quoter address is not configured.';
+    const quote = simulatedQuote({ ...body, priceHype: launch.priceHype, liquidityHype: launch.liquidityHype, feeBps: config.tradeFeeBps });
     return { source: 'simulated', ...quote, reason: reason ?? quote.reason };
   }));
 
@@ -57,7 +62,7 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
     if (config.live) fail(409, 'Paper fills are only available in the simulated preview.');
     const body = parse(quoteSchema.omit({ wallet: true }), req.body);
     const launch = store.toApi(launchOr404(body.token), config);
-    const quote = simulatedQuote({ ...body, priceHype: launch.priceHype, liquidityHype: launch.liquidityHype });
+    const quote = simulatedQuote({ ...body, priceHype: launch.priceHype, liquidityHype: launch.liquidityHype, feeBps: config.tradeFeeBps });
     if (quote.amountOut === '0') fail(409, quote.reason);
     const hype = body.side === 'buy' ? Number(body.amount) : Number(quote.amountOut);
     const tokens = body.side === 'buy' ? Number(quote.amountOut) : Number(body.amount);

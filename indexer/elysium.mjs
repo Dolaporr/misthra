@@ -42,22 +42,24 @@ export function createIndexer(store, provider, config, { onLaunch = () => {}, on
     return { name: String(name).slice(0, 80), symbol: String(symbol).slice(0, 24), decimals: Number(decimals), totalSupply: Number(formatUnits(supply, decimals)) };
   }
 
-  async function liquidity(pool) {
-    const raw = await provider.call({ to: config.whype, data: token.encodeFunctionData('balanceOf', [pool]) });
+  const quotes = new Set(config.whypes ?? [config.whype]);
+  async function liquidity(pool, quote = config.whype) {
+    const raw = await provider.call({ to: quote, data: token.encodeFunctionData('balanceOf', [pool]) });
     return Number(formatUnits(BigInt(raw), 18)) * 2; // both sides valued at the WHYPE side: a convention, labelled as such in the docs
   }
 
   async function onPoolCreated(entry) {
     const e = v3.parseLog(entry);
     const [t0, t1] = [lower(e.args.token0), lower(e.args.token1)];
-    if (t0 !== config.whype && t1 !== config.whype) return;
-    const launchToken = t0 === config.whype ? t1 : t0, pool = lower(e.args.pool);
+    if (!quotes.has(t0) && !quotes.has(t1)) return;
+    const quote = quotes.has(t0) ? t0 : t1;
+    const launchToken = quote === t0 ? t1 : t0, pool = lower(e.args.pool);
     const [meta, tx, at] = await Promise.all([erc20(launchToken), provider.getTransaction(entry.transactionHash), timeOf(entry.blockNumber)]);
     const pad = padFor([lower(tx.to ?? ''), lower(tx.from)]);
     const map = tracked(); map[pool] = launchToken; saveTracked(map);
     const { created } = store.putLaunch({
       address: launchToken, ...meta, image: null, padId: pad?.id ?? null, createdAt: at, createdBlock: entry.blockNumber, creator: lower(tx.from),
-      pool: { address: pool, venue: 'uniswap-v3', fee: Number(e.args.fee), token0IsLaunch: t0 === launchToken }, liquidityHype: await liquidity(pool).catch(() => 0),
+      pool: { address: pool, venue: 'uniswap-v3', fee: Number(e.args.fee), token0IsLaunch: t0 === launchToken, factory: lower(entry.address), quote }, liquidityHype: await liquidity(pool, quote).catch(() => 0),
       links: { explorer: explorerLink(config, 'token', launchToken), pool: explorerLink(config, 'address', pool) }, safety: { checks: [], checkedAt: null }, ai: null,
     }, 'live');
     if (created) { onLaunch(launchToken); refreshSafety(launchToken).catch((err) => log(`safety ${launchToken}: ${err.message}`)); }
@@ -111,7 +113,7 @@ export function createIndexer(store, provider, config, { onLaunch = () => {}, on
   }
 
   async function scan(from, to) {
-    const created = await provider.getLogs({ address: config.v3Factory, topics: [T.poolCreated], fromBlock: from, toBlock: to });
+    const created = await provider.getLogs({ address: config.v3Factories ?? [config.v3Factory], topics: [T.poolCreated], fromBlock: from, toBlock: to });
     for (const entry of created) await onPoolCreated(entry);
     const map = tracked(), pools = Object.keys(map);
     const logs = [];
@@ -131,7 +133,7 @@ export function createIndexer(store, provider, config, { onLaunch = () => {}, on
     }
     for (const pool of touchedPools) {
       const raw = store.getRaw(map[pool]);
-      if (raw) store.putLaunch({ ...raw, liquidityHype: await liquidity(pool).catch(() => raw.liquidityHype) }, 'live');
+      if (raw) store.putLaunch({ ...raw, liquidityHype: await liquidity(pool, raw.pool.quote).catch(() => raw.liquidityHype) }, 'live');
     }
   }
 

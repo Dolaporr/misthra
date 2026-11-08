@@ -14,7 +14,8 @@
     "test": "node --test tests/*.test.mjs",
     "test:contracts": "node --test tests/contracts/*.test.mjs",
     "contracts:compile": "node scripts/compile-contracts.mjs",
-    "mcp": "node mcp/index.mjs"
+    "mcp": "node mcp/index.mjs",
+    "deploy:contracts": "node scripts/deploy-elysium.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",

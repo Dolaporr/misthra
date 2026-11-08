@@ -21,10 +21,12 @@ test('indexer turns pool, swap, transfer and router events into launches', async
   const wait = async (p) => (await p).wait();
 
   const whype = await deploy('MockWHYPE'), factory = await deploy('MockEventFactory'), pad = await deploy('MockPad');
+  // A pad with its own factory and its own wrapped HYPE, as one pad's docs describe.
+  const padFactory = await deploy('MockEventFactory'), padWhype = await deploy('MockWHYPE');
   const impl = await deploy('MisthraFeeRouter'), routerFactory = await deploy('MisthraFeeRouterFactory', await impl.getAddress());
   const W = (await whype.getAddress()).toLowerCase();
   const config = {
-    live: true, whype: W, v3Factory: (await factory.getAddress()).toLowerCase(), routerFactory: (await routerFactory.getAddress()).toLowerCase(),
+    live: true, whype: W, whypes: [W, (await padWhype.getAddress()).toLowerCase()], v3Factory: (await factory.getAddress()).toLowerCase(), v3Factories: [(await factory.getAddress()).toLowerCase(), (await padFactory.getAddress()).toLowerCase()], routerFactory: (await routerFactory.getAddress()).toLowerCase(),
     pads: [{ id: 'testpad', name: 'Test Pad', url: null, locksLiquidity: true, contracts: [(await pad.getAddress()).toLowerCase()] }],
     confirmations: 0, startBlock: 0, hypercoreListed: new Set(), explorer: null,
   };
@@ -59,10 +61,17 @@ test('indexer turns pool, swap, transfer and router events into launches', async
   const router = new ContractFactory(artifacts.MisthraFeeRouter.abi, artifacts.MisthraFeeRouter.bytecode).attach(routerAddress).connect(creator);
   await wait(router.bind(token));
 
+  const [padToken, padPool] = await pad.connect(creator).launch.staticCall(await padFactory.getAddress(), await padWhype.getAddress(), 'Own Factory', 'OWN');
+  await wait(pad.connect(creator).launch(await padFactory.getAddress(), await padWhype.getAddress(), 'Own Factory', 'OWN'));
+
   let r; do { r = await indexer.step(); } while (r.to < r.head);
   await indexer.refreshSafety(token.toLowerCase());
 
-  assert.deepEqual(launched, [token.toLowerCase()], 'only the WHYPE pool is a launch');
+  assert.deepEqual(launched, [token.toLowerCase(), padToken.toLowerCase()], 'WHYPE pools on every configured factory are launches; the other pool is not');
+  const own = store.getRaw(padToken);
+  assert.equal(own.pool.factory, (await padFactory.getAddress()).toLowerCase());
+  assert.equal(own.pool.quote, (await padWhype.getAddress()).toLowerCase());
+  assert.equal(own.pool.address, padPool.toLowerCase());
   const raw = store.getRaw(token);
   assert.equal(raw.source, 'live');
   const api = store.toApi(raw, { ...config, pads: config.pads });

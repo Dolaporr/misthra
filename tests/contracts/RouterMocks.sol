@@ -201,3 +201,27 @@ contract MockV3Pool {
         tickCumulatives[1] = int56(twapTick) * int56(uint56(secondsAgos[0]));
     }
 }
+
+/// @notice QuoterV2-shaped quote at the same fixed rate as MockV3Router.
+contract MockQuoter {
+    struct QuoteExactInputSingleParams {
+        address tokenIn;
+        address tokenOut;
+        uint256 amountIn;
+        uint24 fee;
+        uint160 sqrtPriceLimitX96;
+    }
+
+    MockV3Router public immutable router;
+
+    constructor(MockV3Router router_) { router = router_; }
+
+    function quoteExactInputSingle(QuoteExactInputSingleParams calldata p)
+        external
+        view
+        returns (uint256 amountOut, uint160, uint32, uint256)
+    {
+        amountOut = p.amountIn * router.rateNumerator() / router.rateDenominator();
+        return (amountOut, 0, 0, 0);
+    }
+}

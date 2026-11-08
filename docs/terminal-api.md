@@ -47,7 +47,8 @@ type Launch = {
 
 ### Feed
 - `GET /api/launches?stage=new|stretch|migrated&pad=<id>&q=<text>&sort=age|volume|holders|traction&limit=60`
-  → `{ source, indexedBlock, updatedAt, pads: Pad[], launches: Launch[] }`
+  → `{ source, networkVerified: boolean | null, tradeFeeBps: number, indexedBlock, updatedAt, pads: Pad[], launches: Launch[] }`
+  `networkVerified` is false in live mode until the operator confirms every network address; show a warning when it is false.
 - `GET /api/launches/:address` → `{ source, launch: Launch }`
 - `GET /api/launches/:address/candles?tf=15s|1m|5m|15m|1h` → `{ source, bars: { t, o, h, l, c, v }[] }` (price in HYPE, volume in HYPE)
 - `GET /api/launches/:address/trades?limit=50` → `{ source, trades: { tx, t, side: 'buy'|'sell', trader, amountHype, amountToken }[] }`
@@ -56,8 +57,9 @@ type Launch = {
 
 ### Trade
 - `POST /api/trade/quote` body `{ token, side: 'buy'|'sell', amount, slippageBps, wallet? }` (amount in HYPE for buys, tokens for sells; `wallet` defaults to the session's)
-  → `{ source, amountOut, minOut, priceImpactBps: number | null, route: string, tx: { to, data, value, chainId } | null, approveTx: { to, data, value, chainId } | null, reason: string | null }`
+  → `{ source, amountOut, minOut, feeHype, feeBps, priceImpactBps: number | null, route: string, tx: { to, data, value, chainId } | null, approveTx: { to, data, value, chainId } | null, reason: string | null }`
   `tx` is null in simulated mode, without a wallet, or when swaps are not configured; `reason` says why. For a sell, send `approveTx` first when it is present. Buys use a 2-minute deadline.
+  Live trades go through `MisthraTradeGateway`, which takes `feeBps` (0.9% at launch, at most 1%) in HYPE in the same transaction; `amountOut` and `minOut` are what the trader receives after it. Pools on another factory or quoted in another WHYPE are shown but not traded (`tx` null, `reason` explains).
 - Paper desk (simulated only): `POST /api/paper/fill` `{ token, side, amount, slippageBps }` → `{ fill }`; `GET /api/paper/positions` → `{ positions }`
 
 ### Alerts (session required)

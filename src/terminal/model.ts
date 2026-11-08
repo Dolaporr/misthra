@@ -20,12 +20,12 @@ export type Launch = {
   traction: Traction | null; safety: Safety; ai: AiRead; router: RouterRef;
   links: { explorer: string | null; pad: string | null; pool: string | null };
 };
-export type Feed = { source: Source; indexedBlock: number; updatedAt: number; pads: NonNullable<Pad>[]; launches: Launch[] };
+export type Feed = { source: Source; networkVerified: boolean | null; tradeFeeBps: number; indexedBlock: number; updatedAt: number; pads: NonNullable<Pad>[]; launches: Launch[] };
 export type Bar = { t: number; o: string; h: string; l: string; c: string; v: string };
 export type Trade = { tx: string; t: number; side: 'buy' | 'sell'; trader: string; amountHype: string; amountToken: string };
 export type Holder = { address: string; pct: number; tags: string[] };
 export type Tx = { to: string; data: string; value: string; chainId: number | null; from?: string };
-export type Quote = { source: Source; amountOut: string; minOut: string; priceImpactBps: number | null; route: string; tx: Tx | null; approveTx: Tx | null; reason: string | null };
+export type Quote = { source: Source; amountOut: string; minOut: string; feeHype: string; feeBps: number; priceImpactBps: number | null; route: string; tx: Tx | null; approveTx: Tx | null; reason: string | null };
 export type AlertRule = { id: string; kind: 'launch' | 'stage' | 'wallet'; pad?: string; minVolumeHype?: number; maxAgeMin?: number; minHolders?: number; token?: string; wallet?: string; createdAt: number };
 export type AlertEvent = { id: string; ruleId: string; at: number; title: string; detail: string; token: string | null };
 

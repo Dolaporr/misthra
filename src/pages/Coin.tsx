@@ -142,7 +142,7 @@ function TradePanel({ launch, autoFocus }: { launch: Launch; autoFocus: boolean 
     <label className="field-label inline" htmlFor="trade-slippage">Slippage %<input id="trade-slippage" inputMode="decimal" value={slippage} onChange={(e) => setSlippage(e.target.value.trim())} /></label>
     <button className="button primary full" disabled={!valid || busy} onClick={getQuote}>{busy && !quote ? 'Quoting…' : 'Get quote'}</button>
     {quote && <div className="quote" aria-live="polite">
-      <dl><div><dt>You receive</dt><dd>{hype(quote.amountOut)} {side === 'buy' ? launch.symbol : 'HYPE'}</dd></div><div><dt>At least</dt><dd>{hype(quote.minOut)}</dd></div><div><dt>Price impact</dt><dd>{quote.priceImpactBps == null ? '–' : `${(quote.priceImpactBps / 100).toFixed(2)}%`}</dd></div><div><dt>Route</dt><dd>{quote.route}</dd></div></dl>
+      <dl><div><dt>You receive</dt><dd>{hype(quote.amountOut)} {side === 'buy' ? launch.symbol : 'HYPE'}</dd></div><div><dt>At least</dt><dd>{hype(quote.minOut)}</dd></div><div><dt>Misthra fee ({(quote.feeBps / 100).toFixed(2).replace(/0$/, '')}%)</dt><dd>{hype(quote.feeHype)} HYPE</dd></div><div><dt>Price impact</dt><dd>{quote.priceImpactBps == null ? '–' : `${(quote.priceImpactBps / 100).toFixed(2)}%`}</dd></div><div><dt>Route</dt><dd>{quote.route}</dd></div></dl>
       {quote.tx ? <button className="button primary full" disabled={busy} onClick={execute}>{quote.approveTx ? 'Approve, then swap in wallet' : 'Confirm in wallet'}</button>
         : <><p className="muted small">{quote.reason}</p>{quote.source === 'simulated' && <button className="button secondary full" disabled={busy} onClick={paper}>{identity.address ? 'Paper fill (simulated)' : 'Sign in for a paper fill'}</button>}</>}
     </div>}

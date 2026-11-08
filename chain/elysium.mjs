@@ -6,6 +6,7 @@
 import { readFileSync } from 'node:fs';
 import { getAddress, isAddress } from 'ethers';
 
+const list = (value) => (value || '').split(',').map((v) => addr(v.trim())).filter(Boolean);
 const addr = (value) => (value && isAddress(value) ? getAddress(value).toLowerCase() : null);
 
 export function loadElysiumConfig(env = process.env) {
@@ -14,8 +15,13 @@ export function loadElysiumConfig(env = process.env) {
     rpcUrl: env.ELYSIUM_RPC_URL || null,
     chainId: env.ELYSIUM_CHAIN_ID ? Number(env.ELYSIUM_CHAIN_ID) : null,
     explorer: env.ELYSIUM_EXPLORER_URL || null,
-    whype: addr(env.ELYSIUM_WHYPE),
-    v3Factory: addr(env.ELYSIUM_UNISWAP_V3_FACTORY),
+    // Comma-separated lists. The first entry is canonical: the WHYPE and factory the
+    // terminal trades through. Others are only indexed (e.g. a pad's own factory).
+    whypes: list(env.ELYSIUM_WHYPE),
+    v3Factories: list(env.ELYSIUM_UNISWAP_V3_FACTORY),
+    networkVerified: env.ELYSIUM_NETWORK_VERIFIED === '1',
+    tradeGateway: addr(env.MISTHRA_TRADE_GATEWAY),
+    tradeFeeBps: Number(env.MISTHRA_TRADE_FEE_BPS ?? 90),
     v3Quoter: addr(env.ELYSIUM_UNISWAP_V3_QUOTER),
     v3SwapRouter: addr(env.ELYSIUM_UNISWAP_V3_SWAP_ROUTER),
     routerFactory: addr(env.MISTHRA_ROUTER_FACTORY),
@@ -27,8 +33,11 @@ export function loadElysiumConfig(env = process.env) {
     hypercoreListed: new Set((env.ELYSIUM_HYPERCORE_LISTED || '').split(',').map(addr).filter(Boolean)),
     pads,
   };
+  config.whype = config.whypes[0] ?? null;
+  config.v3Factory = config.v3Factories[0] ?? null;
   config.live = Boolean(config.rpcUrl && config.chainId && config.whype && config.v3Factory);
-  config.tradeReady = Boolean(config.live && config.v3Quoter && config.v3SwapRouter);
+  // Live trades go only through the fee gateway, which itself calls the swap router.
+  config.tradeReady = Boolean(config.live && config.v3Quoter && config.tradeGateway);
   config.routerReady = Boolean(config.live && config.routerFactory && config.routerSwapAdapter && config.routerProtocolFeeRecipient);
   return config;
 }

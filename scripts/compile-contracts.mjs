@@ -57,7 +57,7 @@ function solcRun(sources, evmVersion) {
 const CODEHASH_RE = /(IMPLEMENTATION_CODEHASH =\s*)0x[0-9a-fA-F]{64}/;
 export function compileRouter({ evmVersion = 'cancun', write = false, extraSources = {} } = {}) {
   const sources = {};
-  for (const file of routerSourceFiles()) sources[path.relative(root, file)] = { content: readFileSync(file, 'utf8') };
+  for (const file of [...routerSourceFiles(), ...routerSourceFiles(path.join(root, 'contracts/trade'))]) sources[path.relative(root, file)] = { content: readFileSync(file, 'utf8') };
   const typesKey = 'contracts/router/RouterTypes.sol';
   // Pass 1: the router alone. It never reads the pinned hash, so its code is stable.
   const first = solcRun({ 'contracts/router/MisthraFeeRouter.sol': sources['contracts/router/MisthraFeeRouter.sol'], [typesKey]: sources[typesKey], ...Object.fromEntries(Object.entries(sources).filter(([k]) => k.includes('/interfaces/') || k.includes('/libraries/'))) }, evmVersion);
@@ -70,7 +70,7 @@ export function compileRouter({ evmVersion = 'cancun', write = false, extraSourc
   if (write) {
     writeFileSync(path.join(routerDir, 'RouterTypes.sol'), sources[typesKey].content);
     mkdirSync(path.join(root, 'artifacts/router'), { recursive: true });
-    for (const name of ['MisthraFeeRouter', 'MisthraFeeRouterFactory', 'MisthraV3SwapAdapter', 'MisthraV3TwapPriceGuard', 'MisthraSharedV3TwapPriceGuard'])
+    for (const name of ['MisthraFeeRouter', 'MisthraFeeRouterFactory', 'MisthraV3SwapAdapter', 'MisthraV3TwapPriceGuard', 'MisthraSharedV3TwapPriceGuard', 'MisthraTradeGateway'])
       writeFileSync(path.join(root, `artifacts/router/${name}.json`), `${JSON.stringify(artifacts[name], null, 2)}\n`);
   }
   return { artifacts, codehash };

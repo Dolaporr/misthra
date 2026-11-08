@@ -18,6 +18,7 @@
 .launch-page .wallet-row{min-width:0;max-width:100%}
 .launch-page .wallet-row input:not([type=checkbox]):first-child{min-width:0;max-width:100%;width:100%;flex-basis:280px}
 .launch-page .wallet-row .check{flex-shrink:1;white-space:normal}
+.launch-page .wallet-row .check input[type=checkbox]{flex:0 0 16px;min-width:16px;width:16px;max-width:16px}
 @media(max-width:760px){.pad-support-list{grid-template-columns:1fr;gap:18px}}
 .router-example-note{font-size:13px;line-height:1.85;color:#bbcce7;max-width:65ch;margin:0 0 24px}
 .router-bucket-preview{font-size:12px;line-height:1.8;color:#c2d8fd;padding:12px 0 2px;margin:0;max-width:65ch}

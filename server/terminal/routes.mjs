@@ -7,6 +7,7 @@ import { planRouter } from '../../chain/router-plan.mjs';
 import { PAD_SUPPORT, PAD_SUPPORT_CHECKED, usable } from './pad-support.mjs';
 import { capabilities } from './capabilities.mjs';
 import { safeReturnUrl } from './partners.mjs';
+import { IMAGE_ROUTE, imageRoute } from './image-proxy.mjs';
 import { readRouterSnapshot, RouterReadError } from '../../chain/router-reads.mjs';
 import { prepareRouterAction } from '../../chain/router-actions.mjs';
 import { readFileSync } from 'node:fs';
@@ -15,7 +16,7 @@ import { Interface, formatUnits } from 'ethers';
 
 const STAGES = ['new', 'stretch', 'migrated'];
 
-export function mountTerminal(app, { store, config, provider = null, auth, now = () => Date.now(), partners = [], usdRate = () => null }) {
+export function mountTerminal(app, { store, config, provider = null, auth, now = () => Date.now(), partners = [], usdRate = () => null, images = null }) {
   const r = express.Router();
   const source = () => (config.live ? 'live' : 'simulated');
   const clients = new Map(); // response -> wallet address or null
@@ -182,6 +183,7 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
   }));
 
   r.get('/capabilities', json(() => capabilities(config, { agoraOn, usd: usdRate() })));
+  if (images) r.get(IMAGE_ROUTE, imageRoute(images));
 
   r.get('/stream', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });

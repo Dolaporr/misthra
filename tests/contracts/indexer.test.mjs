@@ -161,3 +161,47 @@ test('indexer reads Montra v4 launches and swaps, attributes them to Montra, and
   assert.deepEqual(updates.at(-1), [token, { image: 'https://ipfs.io/ipfs/QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG' }]);
   assert.equal(await indexer.backfillImages(), 0, 'checked launches are not re-read');
 });
+
+// Other v4 pads (Ascend, Volta, ElysPump): pools created by a known pad hook on the PoolManager.
+test('indexer reads v4 pools created by a known pad hook, and ignores unknown hooks', async (t) => {
+  const mocks = (name) => readFileSync(new URL(name, import.meta.url), 'utf8');
+  const { artifacts } = compileRouter({ evmVersion: 'shanghai', extraSources: { 'tests/contracts/RouterMocks.sol': mocks('RouterMocks.sol'), 'tests/contracts/IndexerMocks.sol': mocks('IndexerMocks.sol') } });
+  const rpc = ganache.provider({ logging: { quiet: true }, chain: { chainId: 31337, hardfork: 'shanghai' }, wallet: { totalAccounts: 3, defaultBalance: 1000 } });
+  t.after(() => rpc.disconnect());
+  const provider = new BrowserProvider(rpc, undefined, { cacheTimeout: -1 }); provider.pollingInterval = 10;
+  const [deployer, creator, trader] = await Promise.all([0, 1, 2].map((i) => provider.getSigner(i)));
+  const deploy = async (name, ...args) => { const k = await new ContractFactory(artifacts[name].abi, artifacts[name].bytecode, deployer).deploy(...args); await k.waitForDeployment(); return k; };
+  const wait = async (p) => (await p).wait();
+  const manager = await deploy('MockV4PoolManager'), whype = await deploy('MockWHYPE'), factory = await deploy('MockEventFactory');
+  const token = await deploy('MockToken', 'Volta Coin', 'VLT'), stray = await deploy('MockToken', 'Stray', 'STR');
+  await wait(token.mint(await creator.getAddress(), parseEther('1000000')));
+  const W = (await whype.getAddress()).toLowerCase(), T = (await token.getAddress()).toLowerCase();
+  const VOLTA_HOOK = '0x3ab88ddc3cf2a012af88b60828edb4553697e5dc', OTHER_HOOK = '0x' + '77'.repeat(20);
+  const config = {
+    live: true, whype: W, whypes: [W], v3Factory: (await factory.getAddress()).toLowerCase(), v3Factories: [(await factory.getAddress()).toLowerCase()], routerFactory: null,
+    montra: null, v4PoolManager: (await manager.getAddress()).toLowerCase(),
+    pads: [{ id: 'volta', name: 'Volta', url: null, contracts: [], v4Hooks: [VOLTA_HOOK] }],
+    confirmations: 0, startBlock: 0, hypercoreListed: new Set(), explorer: null,
+  };
+  const store = createTerminalStore(new DatabaseSync(':memory:'));
+  const launched = [];
+  const indexer = createIndexer(store, provider, config, { onLaunch: (a) => launched.push(a) });
+  const id = keccak256('0x0c'), strayId = keccak256('0x0d');
+  // Native HYPE (address 0) is currency0; the token is currency1.
+  await wait(manager.connect(creator).initialize(id, ZeroAddress, T, VOLTA_HOOK, 'Volta Coin', 'VLT', 'https://cdn.example.com/vlt.png'));
+  await wait(manager.connect(creator).initialize(strayId, ZeroAddress, (await stray.getAddress()).toLowerCase(), OTHER_HOOK, 'Stray', 'STR', 'https://cdn.example.com/s.png'));
+  await wait(manager.connect(trader).swap(id, -parseEther('3'), parseEther('3000'), 2n ** 96n, 10n ** 20n));
+  await indexer.step();
+  assert.deepEqual(launched, [T], 'only the pool with a known pad hook');
+  const raw = store.getRaw(T);
+  assert.equal(raw.padId, 'volta');
+  assert.equal(raw.pool.venue, 'uniswap-v4');
+  assert.equal(raw.pool.poolId, id.toLowerCase());
+  assert.equal(raw.creator, (await creator.getAddress()).toLowerCase());
+  assert.equal(raw.image, 'https://cdn.example.com/vlt.png');
+  const trades = store.trades(T, 10);
+  assert.equal(trades.length, 1); assert.equal(trades[0].side, 'buy'); assert.equal(Number(trades[0].amountHype), 3);
+  assert.equal(raw.liquidityHype ?? store.getRaw(T).liquidityHype, 6);
+  const view = store.toApi(store.getRaw(T), config);
+  assert.equal(view.pad.name, 'Volta'); assert.match(view.trade.reason, /Trade it on Volta/);
+});

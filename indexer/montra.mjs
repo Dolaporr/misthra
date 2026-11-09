@@ -12,11 +12,25 @@ export const montraEvents = new Interface([
 ]);
 export const v4Events = new Interface([
   'event Swap(bytes32 indexed id, address indexed sender, int128 amount0, int128 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick, uint24 fee)',
+  'event Initialize(bytes32 indexed id, address indexed currency0, address indexed currency1, uint24 fee, int24 tickSpacing, address hooks, uint160 sqrtPriceX96, int24 tick)',
 ]);
 export const MONTRA_T = {
   launched: montraEvents.getEvent('TokenLaunched').topicHash,
   swap: v4Events.getEvent('Swap').topicHash,
+  initialize: v4Events.getEvent('Initialize').topicHash,
 };
+
+// A v4 pool created by a pad's hook, paired with native HYPE or WHYPE. Returns null otherwise.
+export function parseInitialize(entry, quotes, hookToPad) {
+  const e = v4Events.parseLog(entry);
+  const hooks = lower(e.args.hooks), padId = hookToPad.get(hooks);
+  if (!padId) return null;
+  const c0 = lower(e.args.currency0), c1 = lower(e.args.currency1);
+  const isQuote = (c) => c === NATIVE || quotes.has(c);
+  if (isQuote(c0) === isQuote(c1)) return null;
+  const quote = isQuote(c0) ? c0 : c1, token = quote === c0 ? c1 : c0;
+  return { poolId: lower(e.args.id), token, quote, launchIs0: token === c0, hooks, padId, fee: Number(e.args.fee) };
+}
 
 const NATIVE = '0x0000000000000000000000000000000000000000';
 const lower = (a) => a.toLowerCase();

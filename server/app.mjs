@@ -3,7 +3,7 @@ import multer from 'multer';
 import { DatabaseSync } from 'node:sqlite';
 import { randomBytes, createHash } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
-import { dirname, extname } from 'node:path';
+import { dirname, extname, join } from 'node:path';
 import { verifyMessage, isAddress } from 'ethers';
 import { z } from 'zod';
 import { setupTerminal } from './terminal/index.mjs';
@@ -152,7 +152,7 @@ export function createApp({dbPath='data/errand.sqlite',mode='demo',now=()=>Date.
       else if(b.length>=16&&b.subarray(0,4).equals(Buffer.from([26,69,223,163]))&&b.includes(Buffer.from('webm'))&&ext==='.webm')type='video/webm';
       if(!type||f.mimetype!==type)fail(400,'Unsupported file or file contents do not match its type');if(type.startsWith('image/')&&b.length>1_500_000)fail(400,'Images must be at most 1.5MB');const key=id(),name=f.originalname.replace(/[^a-zA-Z0-9._ -]/g,'_').slice(0,120);db.prepare('INSERT INTO uploads(id,owner,name,type,size,bytes) VALUES(?,?,?,?,?,?)').run(key,actor,name,type,b.length,b);res.json({url:`/api/uploads/${key}`,name,type,size:b.length});}catch(error){next(error);}});});
   app.get('/api/uploads/:id',(req,res,next)=>{try{const f=db.prepare('SELECT name,type,bytes FROM uploads WHERE id=?').get(req.params.id);if(!f)fail(404,'File not found');res.set('Content-Type',f.type);res.set('Content-Security-Policy',"default-src 'none'");res.set('Content-Disposition',`inline; filename="${f.name.replace(/"/g,'_')}"`);res.send(Buffer.from(f.bytes));}catch(e){next(e);}});
-  const terminal=setupTerminal(app,{db,now,auth:req=>{state=read();return authenticate(req);},config:elysium,provider:elysiumProvider,start:terminalStart,log,partners});app.locals.terminal=terminal;app.use('/api',(req,res)=>res.status(404).json({error:'API route not found'}));
+  const terminal=setupTerminal(app,{db,now,auth:req=>{state=read();return authenticate(req);},config:elysium,provider:elysiumProvider,start:terminalStart,log,partners,imageCacheDir:dbPath===':memory:'?null:join(dirname(dbPath),'img-cache')});app.locals.terminal=terminal;app.use('/api',(req,res)=>res.status(404).json({error:'API route not found'}));
   app.use((error,req,res,next)=>{if(res.headersSent)return next(error);const status=error.status||((error.type==='entity.too.large')?413:500);if(status>=500)console.error(error);res.status(status).json({error:status>=500?'The service could not complete this request':error.message});});
   return app;
 }

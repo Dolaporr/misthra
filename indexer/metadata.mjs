@@ -7,7 +7,8 @@
 // image URL only when the token's own name or symbol is among those strings, which shows the
 // call is that token's launch rather than some unrelated call.
 //
-// We never fetch the URL server-side (no SSRF surface); the browser loads it. Metadata JSON
+// The indexer never fetches the URL. IPFS images are later served through the image
+// proxy (server/terminal/image-proxy.mjs), which only talks to fixed IPFS gateways. Metadata JSON
 // URIs (ipfs://…/metadata.json) are not resolved yet, so those launches keep image: null.
 
 const MAX_STRING = 2048;
@@ -60,7 +61,12 @@ export function imageFromCalldata(calldata, { name, symbol } = {}, opts = {}) {
   const strings = abiStrings(calldata);
   const ids = [name, symbol].filter((x) => typeof x === 'string' && x.trim().length).map((x) => x.trim());
   if (!ids.length || !strings.some((s) => ids.includes(s.trim()))) return null;
-  const candidates = strings.filter((s) => /^(https:\/\/|ipfs:\/\/|ar:\/\/)/i.test(s.trim()) && !looksLikeMetadataJson(s));
+  // Some pads (ElysPump) pass a JSON object with an "image" field instead of a bare URL.
+  const fromJson = strings.flatMap((s) => {
+    const t = s.trim(); if (!t.startsWith('{') || !t.endsWith('}')) return [];
+    try { const o = JSON.parse(t); return [o.image, o.imageUrl, o.image_url, o.logo].filter((v) => typeof v === 'string'); } catch { return []; }
+  });
+  const candidates = [...fromJson, ...strings].filter((s) => /^(https:\/\/|ipfs:\/\/|ar:\/\/)/i.test(s.trim()) && !looksLikeMetadataJson(s));
   // Prefer something that is plainly an image; otherwise the first acceptable URL.
   const ordered = [...candidates.filter((s) => IMAGE_EXT.test(s) || /image|img|media|cdn|ipfs|arweave/i.test(s)), ...candidates];
   for (const c of ordered) { const n = normaliseImage(c, opts); if (n) return n; }

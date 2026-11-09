@@ -56,6 +56,14 @@ contract MockMontraFactory {
 contract MockV4PoolManager {
     event Swap(bytes32 indexed id, address indexed sender, int128 amount0, int128 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick, uint24 fee);
 
+    event Initialize(bytes32 indexed id, address indexed currency0, address indexed currency1, uint24 fee, int24 tickSpacing, address hooks, uint160 sqrtPriceX96, int24 tick);
+
+    /// @dev name/symbol/image are only carried in calldata, like a pad's launch call.
+    function initialize(bytes32 id, address currency0, address currency1, address hooks, string calldata name, string calldata symbol, string calldata image) external {
+        name; symbol; image;
+        emit Initialize(id, currency0, currency1, 10000, 200, hooks, 2 ** 96, 0);
+    }
+
     function swap(bytes32 id, int128 amount0, int128 amount1, uint160 sqrtPriceX96, uint128 liquidity) external {
         emit Swap(id, msg.sender, amount0, amount1, sqrtPriceX96, liquidity, 0, 10000);
     }

@@ -20,6 +20,17 @@ export function decimal(x) {
   return x.toFixed(digits).replace(/\.?0+$/, '');
 }
 
+// IPFS artwork is stored with whichever gateway was configured when it was indexed;
+// serve it through the current one (IPFS_GATEWAY) so switching gateways covers old coins.
+const IPFS_PATH = /^https:\/\/[^/]+\/ipfs\/([A-Za-z0-9]{46,}(?:\/[^?#\s]*)?)$/;
+export function withGateway(image, gateway, publicUrl = null) {
+  if (!image) return image;
+  const m = image.match(IPFS_PATH);
+  if (!m) return image;
+  if (publicUrl) return `${publicUrl}/api/img/ipfs/${m[1]}`;
+  return gateway ? `${gateway}/ipfs/${m[1]}` : image;
+}
+
 // Whether Misthra's own buy/sell route can trade this launch, and if not, why.
 // Mirrors the gateway check in routes.mjs (/trade/quote route 1).
 export function tradeAvailability(raw, config, pad) {
@@ -145,7 +156,7 @@ export function createTerminalStore(db, { now = () => Date.now(), usdRate = () =
       const pad = raw.padId ? config.pads.find((p) => p.id === raw.padId) ?? raw.pad ?? null : null;
       const safety = raw.safety ?? { status: 'unchecked', checks: [], checkedAt: null };
       return {
-        address: raw.address, name: raw.name, symbol: raw.symbol, decimals: raw.decimals ?? 18, image: raw.image ?? null,
+        address: raw.address, name: raw.name, symbol: raw.symbol, decimals: raw.decimals ?? 18, image: withGateway(raw.image ?? null, config.ipfsGateway, config.publicUrl),
         pad: pad ? { id: pad.id, name: pad.name, url: pad.url ?? null } : null,
         stage: store.stage(raw, m, config, at), createdAt: raw.createdAt, createdBlock: raw.createdBlock ?? 0, creator: raw.creator,
         pool: { address: raw.pool.address, venue: raw.pool.venue, fee: raw.pool.fee ?? null, poolId: raw.pool.poolId ?? null, quote: raw.pool.quote === '0x0000000000000000000000000000000000000000' ? 'HYPE' : 'WHYPE' },

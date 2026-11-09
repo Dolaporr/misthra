@@ -12,7 +12,7 @@ import { Contract, Interface, formatUnits, id as topic } from 'ethers';
 import { probeSafety } from '../server/terminal/scoring.mjs';
 import { explorerLink } from '../chain/elysium.mjs';
 import { imageFromCalldata } from './metadata.mjs';
-import { MONTRA_T, parseLaunch as parseMontraLaunch, parseSwap as parseV4Swap } from './montra.mjs';
+import { MONTRA_T, parseInitialize, parseLaunch as parseMontraLaunch, parseSwap as parseV4Swap } from './montra.mjs';
 
 const v3 = new Interface([
   'event PoolCreated(address indexed token0, address indexed token1, uint24 indexed fee, int24 tickSpacing, address pool)',
@@ -29,6 +29,7 @@ const T = {
   routerDeployed: routerEvents.getEvent('RouterDeployed').topicHash, subjectBound: routerEvents.getEvent('SubjectBound').topicHash,
 };
 const lower = (a) => a.toLowerCase();
+const ZERO = '0x0000000000000000000000000000000000000000';
 const chunks = (list, n) => Array.from({ length: Math.ceil(list.length / n) }, (_, i) => list.slice(i * n, i * n + n));
 
 export function createIndexer(store, provider, config, { onLaunch = () => {}, onTrade = () => {}, onUpdate = () => {}, log = () => {}, rangeSize = 5000, imageBackfillPerStep = 20 } = {}) {
@@ -109,6 +110,24 @@ export function createIndexer(store, provider, config, { onLaunch = () => {}, on
     if (created) { onLaunch(l.token); refreshSafety(l.token).catch((err) => log(`safety ${l.token}: ${err.message}`)); }
   }
 
+  // Pads other than Montra: pools created on the shared v4 PoolManager by a known pad hook.
+  const montraHook = config.montra?.hook ? lower(config.montra.hook) : null;
+  const hookToPad = new Map(config.pads.flatMap((p) => (p.v4Hooks ?? []).filter((h) => h !== montraHook).map((h) => [lower(h), p.id])));
+  async function onV4Initialize(entry) {
+    const l = parseInitialize(entry, quotes, hookToPad);
+    if (!l || store.getRaw(l.token)) return;
+    const [meta, at, tx] = await Promise.all([erc20(l.token), timeOf(entry.blockNumber), provider.getTransaction(entry.transactionHash).catch(() => null)]);
+    const pad = config.pads.find((p) => p.id === l.padId);
+    const map = trackedV4(); map[l.poolId] = l.token; saveTrackedV4(map);
+    const { created } = store.putLaunch({
+      address: l.token, ...meta, image: tx ? imageFromCalldata(tx.data, meta, imageOpts) : null, imageCheckedAt: tx ? Date.now() : null, createdTx: entry.transactionHash,
+      padId: pad.id, pad: { id: pad.id, name: pad.name, url: pad.url ?? null }, createdAt: at, createdBlock: entry.blockNumber, creator: lower(tx?.from ?? ZERO),
+      pool: { address: lower(config.v4PoolManager), venue: 'uniswap-v4', poolId: l.poolId, token0IsLaunch: l.launchIs0, factory: l.hooks, quote: l.quote, fee: l.fee, excluded: [l.hooks] },
+      feeRecipient: null, links: { explorer: explorerLink(config, 'token', l.token), pool: null }, safety: { checks: [], checkedAt: null }, ai: null,
+    }, 'live');
+    if (created) { onLaunch(l.token); refreshSafety(l.token).catch((err) => log(`safety ${l.token}: ${err.message}`)); }
+  }
+
   async function onV4Swap(entry, launchToken, senders) {
     const raw = store.getRaw(launchToken);
     if (!raw) return;
@@ -156,9 +175,14 @@ export function createIndexer(store, provider, config, { onLaunch = () => {}, on
       const launched = await provider.getLogs({ address: config.montra.factory, topics: [MONTRA_T.launched], fromBlock: from, toBlock: to });
       for (const entry of launched) await onMontraLaunch(entry);
     }
+    if (config.v4PoolManager && hookToPad.size) {
+      const inits = await provider.getLogs({ address: config.v4PoolManager, topics: [MONTRA_T.initialize], fromBlock: from, toBlock: to });
+      for (const entry of inits) await onV4Initialize(entry);
+    }
     const map = tracked(), pools = Object.keys(map), v4map = trackedV4();
     const logs = [];
-    if (config.montra) for (const group of chunks(Object.keys(v4map), 50)) logs.push(...await provider.getLogs({ address: config.montra.poolManager, topics: [MONTRA_T.swap, group], fromBlock: from, toBlock: to }));
+    const manager = config.v4PoolManager ?? config.montra?.poolManager ?? null;
+    if (manager) for (const group of chunks(Object.keys(v4map), 50)) logs.push(...await provider.getLogs({ address: manager, topics: [MONTRA_T.swap, group], fromBlock: from, toBlock: to }));
     for (const group of chunks(pools, 200)) logs.push(...await provider.getLogs({ address: group, topics: [T.swap], fromBlock: from, toBlock: to }));
     for (const group of chunks([...new Set([...Object.values(map), ...Object.values(v4map)])], 200)) logs.push(...await provider.getLogs({ address: group, topics: [T.transfer], fromBlock: from, toBlock: to }));
     if (config.routerFactory) {
@@ -169,7 +193,7 @@ export function createIndexer(store, provider, config, { onLaunch = () => {}, on
     logs.sort((a, b) => a.blockNumber - b.blockNumber || a.index - b.index);
     const touchedPools = new Set(), senders = new Map();
     for (const entry of logs) {
-      if (entry.topics[0] === MONTRA_T.swap && config.montra && lower(entry.address) === lower(config.montra.poolManager)) await onV4Swap(entry, v4map[lower(entry.topics[1])], senders);
+      if (entry.topics[0] === MONTRA_T.swap && manager && lower(entry.address) === lower(manager)) await onV4Swap(entry, v4map[lower(entry.topics[1])], senders);
       else if (entry.topics[0] === T.swap) { touchedPools.add(lower(entry.address)); await onSwap(entry, map[lower(entry.address)]); }
       else if (entry.topics[0] === T.transfer) onTransfer(entry);
       else if (entry.topics[0] === T.subjectBound) await onSubjectBound(entry);

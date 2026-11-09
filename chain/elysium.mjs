@@ -33,6 +33,8 @@ export function loadElysiumConfig(env = process.env) {
     confirmations: Number(env.ELYSIUM_CONFIRMATIONS ?? 20),
     hypercoreListed: new Set((env.ELYSIUM_HYPERCORE_LISTED || '').split(',').map(addr).filter(Boolean)),
     pads,
+    // Gateway used to turn ipfs:// artwork into https links.
+    ipfsGateway: (env.IPFS_GATEWAY || 'https://ipfs.io').replace(/\/+$/, ''),
     // Montra (Uniswap v4): set both to index its launches; the hook is excluded from holders.
     montra: addr(env.ELYSIUM_MONTRA_FACTORY) && addr(env.ELYSIUM_UNISWAP_V4_POOL_MANAGER)
       ? { factory: addr(env.ELYSIUM_MONTRA_FACTORY), poolManager: addr(env.ELYSIUM_UNISWAP_V4_POOL_MANAGER), hook: addr(env.ELYSIUM_MONTRA_HOOK) }

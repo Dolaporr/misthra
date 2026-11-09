@@ -11,6 +11,8 @@ export const NEW_WINDOW = 6 * HOUR;
 export const STRETCH = { holders: 25, volume24h: 50, liquidity: 20 };
 const BURN = new Set(['0x0000000000000000000000000000000000000000', '0x000000000000000000000000000000000000dead']);
 
+import { usd } from './hype-usd.mjs';
+
 export function decimal(x) {
   if (x == null || !Number.isFinite(x)) return '0';
   if (x === 0) return '0';
@@ -30,7 +32,7 @@ export function tradeAvailability(raw, config, pad) {
   return { misthra: false, reason: `${why} Trade it ${where}.`, venueUrl: pad?.url ?? null };
 }
 
-export function createTerminalStore(db, { now = () => Date.now() } = {}) {
+export function createTerminalStore(db, { now = () => Date.now(), usdRate = () => ({ hypeUsd: null }) } = {}) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS t_launches (address TEXT PRIMARY KEY, data TEXT NOT NULL, created_at INTEGER NOT NULL, source TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS t_trades (id INTEGER PRIMARY KEY AUTOINCREMENT, token TEXT NOT NULL, tx TEXT NOT NULL, log_index INTEGER NOT NULL, t INTEGER NOT NULL, side TEXT NOT NULL, trader TEXT NOT NULL, hype REAL NOT NULL, tokens REAL NOT NULL, price REAL NOT NULL, UNIQUE(tx, log_index));
@@ -149,7 +151,7 @@ export function createTerminalStore(db, { now = () => Date.now() } = {}) {
         pool: { address: raw.pool.address, venue: raw.pool.venue, fee: raw.pool.fee ?? null, poolId: raw.pool.poolId ?? null, quote: raw.pool.quote === '0x0000000000000000000000000000000000000000' ? 'HYPE' : 'WHYPE' },
         trade: tradeAvailability(raw, config, pad),
         feeRecipient: raw.feeRecipient ?? null,
-        priceHype: decimal(m.price ?? 0), mcapHype: decimal(m.mcap ?? 0), liquidityHype: decimal(raw.liquidityHype ?? 0),
+        priceHype: decimal(m.price ?? 0), mcapHype: decimal(m.mcap ?? 0), mcapUsd: m.mcap > 0 ? usd(decimal(m.mcap), usdRate().hypeUsd) : null, liquidityHype: decimal(raw.liquidityHype ?? 0),
         volume5mHype: decimal(m.volume5m), volume24hHype: decimal(m.volume24h), txCount24h: m.txCount24h, traders24h: m.traders24h,
         holders: m.holders, top10Pct: m.top10Pct, change5mPct: m.change5m, change1hPct: m.change1h,
         traction: m.hasTrades ? traction({ volume5m: m.volume5m, traders: m.traders24h, change5m: m.change5m, change1h: m.change1h, holders: m.holders, liquidity: raw.liquidityHype }) : null,

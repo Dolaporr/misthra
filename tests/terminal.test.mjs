@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { createApp } from '../server/app.mjs';
 import fixtureData from '../fixtures/launches.sample.json' with { type: 'json' };
 
-const LAUNCH_KEYS = ['address', 'name', 'symbol', 'decimals', 'image', 'pad', 'stage', 'createdAt', 'createdBlock', 'creator', 'pool', 'priceHype', 'mcapHype', 'liquidityHype', 'volume5mHype', 'volume24hHype', 'txCount24h', 'traders24h', 'holders', 'top10Pct', 'change5mPct', 'change1hPct', 'traction', 'safety', 'ai', 'router', 'links', 'trade', 'feeRecipient'];
+const LAUNCH_KEYS = ['address', 'name', 'symbol', 'decimals', 'image', 'pad', 'stage', 'createdAt', 'createdBlock', 'creator', 'pool', 'priceHype', 'mcapHype', 'liquidityHype', 'volume5mHype', 'volume24hHype', 'txCount24h', 'traders24h', 'holders', 'top10Pct', 'change5mPct', 'change1hPct', 'traction', 'safety', 'ai', 'router', 'links', 'trade', 'feeRecipient', 'mcapUsd'];
 
 async function terminal(t) {
   const directory = await mkdtemp(join(tmpdir(), 'misthra-terminal-'));
@@ -274,4 +274,39 @@ test('a partner site can read and plan routers from its own origin, but nothing 
   assert.equal(routers.planned, 1);
   assert.equal(routers.routers[0].router, '0x' + 'ab'.repeat(20));
   assert.equal(routers.deployed, null, 'simulated: deployment unknown, not zero');
+});
+
+test('simulated feed shows dollar market cap from a labelled simulated rate', async (t) => {
+  const f = await terminal(t);
+  const { body } = await f.req('/api/launches?limit=50');
+  assert.equal(body.source, 'simulated');
+  assert.equal(body.usd.source, 'simulated');
+  const { usd } = await import('../server/terminal/hype-usd.mjs');
+  const priced = body.launches.filter((l) => Number(l.mcapHype) > 0);
+  assert.ok(priced.length > 0);
+  for (const l of priced) assert.equal(l.mcapUsd, usd(l.mcapHype, body.usd.hypeUsd), l.symbol);
+  const caps = (await f.req('/api/capabilities')).body;
+  assert.equal(caps.usdPrices.available, true); assert.equal(caps.usdPrices.simulated, true);
+  const one = await f.req(`/api/launches/${priced[0].address}`);
+  assert.equal(one.body.usd.source, 'simulated');
+});
+
+test('live mode: stale or missing HYPE/USD means mcapUsd null and usdPrices unavailable', async (t) => {
+  const { mkdtemp, rm } = await import('node:fs/promises');
+  const directory = await mkdtemp(join(tmpdir(), 'misthra-usd-'));
+  const stale = { current: () => ({ hypeUsd: null, source: 'Hyperliquid HYPE mid (api.hyperliquid.xyz allMids)', fetchedAt: 1, stale: true, maxAgeMs: 120000, reason: 'HYPE/USD price is stale.' }), start() {}, stop() {}, refresh: async () => {} };
+  const { setupTerminal } = await import('../server/terminal/index.mjs');
+  const { DatabaseSync } = await import('node:sqlite');
+  const express = (await import('express')).default;
+  const app = express();
+  const terminal = setupTerminal(app, { db: new DatabaseSync(join(directory, 't.sqlite')), auth: () => null, config: { live: true, pads: [], v3Factories: [], whypes: [], hypercoreListed: new Set(), confirmations: 0, montra: null, agora: { enabled: false, allowedTargets: [] } }, provider: { getBlockNumber: async () => 0 }, hypeUsd: stale });
+  t.after(async () => { terminal.close(); await rm(directory, { recursive: true, force: true }); });
+  const raw = { address: '0x' + '1'.repeat(40), name: 'A', symbol: 'A', decimals: 18, createdAt: Date.now(), creator: '0x' + '2'.repeat(40), pool: { address: '0x' + '3'.repeat(40), venue: 'uniswap-v3' } };
+  terminal.store.putLaunch(raw, 'live');
+  const api = terminal.store.toApi(terminal.store.getRaw(raw.address), terminal.config);
+  assert.equal(api.mcapUsd, null);
+  const { capabilities } = await import('../server/terminal/capabilities.mjs');
+  const caps = capabilities(terminal.config, { usd: stale.current() });
+  assert.equal(caps.usdPrices.available, false);
+  assert.match(caps.usdPrices.reason, /stale/);
 });

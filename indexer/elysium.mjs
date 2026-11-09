@@ -11,6 +11,7 @@
 import { Contract, Interface, formatUnits, id as topic } from 'ethers';
 import { probeSafety } from '../server/terminal/scoring.mjs';
 import { explorerLink } from '../chain/elysium.mjs';
+import { imageFromCalldata } from './metadata.mjs';
 import { MONTRA_T, parseLaunch as parseMontraLaunch, parseSwap as parseV4Swap } from './montra.mjs';
 
 const v3 = new Interface([
@@ -30,7 +31,8 @@ const T = {
 const lower = (a) => a.toLowerCase();
 const chunks = (list, n) => Array.from({ length: Math.ceil(list.length / n) }, (_, i) => list.slice(i * n, i * n + n));
 
-export function createIndexer(store, provider, config, { onLaunch = () => {}, onTrade = () => {}, log = () => {}, rangeSize = 5000 } = {}) {
+export function createIndexer(store, provider, config, { onLaunch = () => {}, onTrade = () => {}, onUpdate = () => {}, log = () => {}, rangeSize = 5000, imageBackfillPerStep = 20 } = {}) {
+  const imageOpts = { ipfsGateway: config.ipfsGateway };
   const blockTime = new Map();
   const timeOf = async (n) => { if (!blockTime.has(n)) { blockTime.set(n, (await provider.getBlock(n)).timestamp * 1000); if (blockTime.size > 5000) blockTime.delete(blockTime.keys().next().value); } return blockTime.get(n); };
   const tracked = () => JSON.parse(store.meta('idx.tracked') ?? '{}'); // pool -> token
@@ -62,7 +64,7 @@ export function createIndexer(store, provider, config, { onLaunch = () => {}, on
     const pad = padFor([lower(tx.to ?? ''), lower(tx.from)]);
     const map = tracked(); map[pool] = launchToken; saveTracked(map);
     const { created } = store.putLaunch({
-      address: launchToken, ...meta, image: null, padId: pad?.id ?? null, createdAt: at, createdBlock: entry.blockNumber, creator: lower(tx.from),
+      address: launchToken, ...meta, image: imageFromCalldata(tx.data, meta, imageOpts), imageCheckedAt: Date.now(), createdTx: entry.transactionHash, padId: pad?.id ?? null, createdAt: at, createdBlock: entry.blockNumber, creator: lower(tx.from),
       pool: { address: pool, venue: 'uniswap-v3', fee: Number(e.args.fee), token0IsLaunch: t0 === launchToken, factory: lower(entry.address), quote }, liquidityHype: await liquidity(pool, quote).catch(() => 0),
       links: { explorer: explorerLink(config, 'token', launchToken), pool: explorerLink(config, 'address', pool) }, safety: { checks: [], checkedAt: null }, ai: null,
     }, 'live');
@@ -94,12 +96,12 @@ export function createIndexer(store, provider, config, { onLaunch = () => {}, on
   async function onMontraLaunch(entry) {
     const l = parseMontraLaunch(entry, quotes);
     if (!l) return;
-    const [meta, at] = await Promise.all([erc20(l.token), timeOf(entry.blockNumber)]);
+    const [meta, at, tx] = await Promise.all([erc20(l.token), timeOf(entry.blockNumber), provider.getTransaction(entry.transactionHash).catch(() => null)]);
     const pad = config.pads.find((p) => p.id === 'montra') ?? { id: 'montra', name: 'Montra', url: null };
     const map = trackedV4(); map[l.poolId] = l.token; saveTrackedV4(map);
     const manager = lower(config.montra.poolManager);
     const { created } = store.putLaunch({
-      address: l.token, ...meta, image: null, padId: pad.id, pad: { id: pad.id, name: pad.name, url: pad.url ?? null }, createdAt: at, createdBlock: entry.blockNumber, creator: l.creator,
+      address: l.token, ...meta, image: tx ? imageFromCalldata(tx.data, meta, imageOpts) : null, imageCheckedAt: tx ? Date.now() : null, createdTx: entry.transactionHash, padId: pad.id, pad: { id: pad.id, name: pad.name, url: pad.url ?? null }, createdAt: at, createdBlock: entry.blockNumber, creator: l.creator,
       pool: { address: manager, venue: 'uniswap-v4', poolId: l.poolId, token0IsLaunch: l.launchIs0, factory: lower(entry.address), quote: l.quote, excluded: [config.montra.hook].filter(Boolean).map(lower) },
       feeRecipient: l.feeRecipient, feeLocked: l.feeLocked,
       links: { explorer: explorerLink(config, 'token', l.token), pool: null }, safety: { checks: [], checkedAt: null }, ai: null,
@@ -178,10 +180,36 @@ export function createIndexer(store, provider, config, { onLaunch = () => {}, on
     }
   }
 
+  // Launches indexed before artwork existed: find their creating transaction (the factory
+  // log in their creation block that names the token) and read the image from it.
+  async function backfillImages(limit = imageBackfillPerStep) {
+    let done = 0;
+    for (const row of store.allRaw?.() ?? []) {
+      if (done >= limit) break;
+      if (row?.source !== 'live' || row.imageCheckedAt || row.image) continue;
+      done += 1;
+      const { source: _s, ...raw } = row;
+      try {
+        let hash = raw.createdTx ?? null;
+        if (!hash && raw.pool?.factory && raw.createdBlock != null) {
+          const logs = await provider.getLogs({ address: raw.pool.factory, fromBlock: raw.createdBlock, toBlock: raw.createdBlock });
+          const word = raw.address.slice(2).toLowerCase();
+          hash = logs.find((g) => g.topics.some((t) => t.toLowerCase().endsWith(word)) || g.data.toLowerCase().includes(word))?.transactionHash ?? null;
+        }
+        const tx = hash ? await provider.getTransaction(hash) : null;
+        const image = tx ? imageFromCalldata(tx.data, raw, imageOpts) : null;
+        store.putLaunch({ ...store.getRaw(raw.address), source: undefined, image, imageCheckedAt: Date.now(), createdTx: hash }, 'live');
+        if (image) onUpdate(raw.address, { image });
+      } catch (err) { log(`image ${raw.address}: ${err.message}`); }
+    }
+    return done;
+  }
+
   async function step() {
     const head = await provider.getBlockNumber();
     const safeHead = head - config.confirmations;
     let next = Number(store.meta('idx.next') ?? config.startBlock ?? Math.max(0, safeHead - 10_000));
+    await backfillImages().catch((err) => log(`image backfill: ${err.message}`));
     if (next > safeHead) return { from: next, to: next - 1, head };
     const to = Math.min(safeHead, next + rangeSize - 1);
     await scan(next, to);
@@ -199,6 +227,7 @@ export function createIndexer(store, provider, config, { onLaunch = () => {}, on
   }
 
   return {
+    backfillImages,
     step, refreshSafety,
     start(ms = 2000) {
       timer ??= setInterval(async () => {

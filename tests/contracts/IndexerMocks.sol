@@ -41,7 +41,8 @@ contract MockPad {
 contract MockMontraFactory {
     event TokenLaunched(address indexed token, address indexed creator, bytes32 indexed poolId, uint256 configId, address quote, bool quoteIsCurrency0, uint256 supply, int24 startTick, address feeRecipient, bool feeLocked, uint256 firstBuyIn, uint256 firstBuyOut);
 
-    function launch(string calldata name, string calldata symbol, bytes32 poolId, address quote, address feeRecipient, address holder) external returns (address token) {
+    function launch(string calldata name, string calldata symbol, string calldata image, bytes32 poolId, address quote, address feeRecipient, address holder) external returns (address token) {
+        image; // carried in calldata only, like Montra
         MockToken t = new MockToken(name, symbol);
         token = address(t);
         t.mint(holder, 1_000_000_000 ether);

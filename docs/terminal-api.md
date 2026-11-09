@@ -35,11 +35,13 @@ type TradeAvailability = { misthra: boolean; reason: string | null; venueUrl: st
 type RouterRef = { address: string; buckets: { label: string; bps: number }[] } | null;
 
 type Launch = {
-  address: string; name: string; symbol: string; decimals: number; image: string | null;
+  address: string; name: string; symbol: string; decimals: number;
+  image: string | null;          // https URL from the launch transaction (see Artwork); null when absent or unsafe
   pad: Pad; stage: 'new' | 'stretch' | 'migrated';
   createdAt: number; createdBlock: number; creator: string;
   pool: Pool;
   priceHype: string; mcapHype: string; liquidityHype: string;
+  mcapUsd: string | null;        // mcapHype × usd.hypeUsd; null when the rate is missing/stale or there is no price yet
   volume5mHype: string; volume24hHype: string; txCount24h: number; traders24h: number;
   holders: number; top10Pct: number | null;           // % of supply in the 10 largest non-pool, non-burn holders
   change5mPct: number | null; change1hPct: number | null;
@@ -51,6 +53,19 @@ type Launch = {
 ```
 
 ## Endpoints
+
+### Artwork
+`image` comes from the transaction that created the launch: pads like Montra pass name, symbol and image URL as arguments of the launch call. The indexer reads the ABI strings in that calldata and takes an image URL **only if the token's own name or symbol is among them**. Accepted: `https://` (no credentials), `ipfs://` (served via `IPFS_GATEWAY`, default `https://ipfs.io`), `ar://` (arweave.net). Refused (→ null): `http://`, `data:`, `javascript:`, metadata JSON URIs (`…/metadata.json`, not resolved yet), malformed links. The server never fetches the image; it is a third-party URL: render it with `referrerPolicy="no-referrer"`, a fixed box and a fallback for load errors. Launches indexed before artwork existed are backfilled in the background (20 per indexer step); when one gets an image the stream sends `update { address, image }`. A launch without artwork stays `image: null`; show a neutral placeholder, never another coin's image.
+
+### Dollar values
+Every feed response (`/api/launches`, `/api/launches/:address`) carries the rate it used:
+`usd: { hypeUsd: string | null, source: string, fetchedAt: number | null, stale: boolean, maxAgeMs: number | null, reason: string | null }`.
+- **Live:** `source` = `"Hyperliquid HYPE mid (api.hyperliquid.xyz allMids)"`, refreshed every 30 s. A rate older than 120 s is stale: `hypeUsd: null`, `stale: true`, `reason` says why, and every `mcapUsd` is null. There is no fixed or fallback rate.
+- **Simulated preview:** `source: "simulated"`, a labelled simulated rate. Show the simulated label next to dollar figures.
+- `mcapUsd` = `mcapHype` × `hypeUsd`, as a decimal string: cents (2 dp) for $1 and up, 3 significant digits below. It is `null` (never `"0"`) when the rate is unavailable or the launch has no trade price yet.
+- **Market cap meaning (v3 and v4 alike):** last trade price × total supply (fully diluted; tokens in the pool included). It is not an estimate of liquidity; `liquidityHype` is separate (pool HYPE counted twice).
+- When `mcapUsd` is null, show "—" with the reason on hover. Never put "$" on a HYPE number.
+- `/api/capabilities` has `usdPrices: { available, reason, source, fetchedAt, maxAgeMs, simulated }`.
 
 ### Capabilities
 - `GET /api/capabilities` (no session needed) → what is switched on right now. Every capability is `{ available: boolean, reason: string | null, ... }`; `reason` is user-ready text when `available` is false. **Unavailable** (shown here, endpoint answers 503) is different from **available with no records** (endpoint answers 200 with an empty list).

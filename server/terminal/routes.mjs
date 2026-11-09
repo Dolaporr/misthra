@@ -15,7 +15,7 @@ import { Interface, formatUnits } from 'ethers';
 
 const STAGES = ['new', 'stretch', 'migrated'];
 
-export function mountTerminal(app, { store, config, provider = null, auth, now = () => Date.now(), partners = [] }) {
+export function mountTerminal(app, { store, config, provider = null, auth, now = () => Date.now(), partners = [], usdRate = () => null }) {
   const r = express.Router();
   const source = () => (config.live ? 'live' : 'simulated');
   const clients = new Map(); // response -> wallet address or null
@@ -46,9 +46,9 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
     // Configured pads in live mode; in the simulated preview, the sample pads present in the feed.
     const pads = config.pads.length ? config.pads.map((p) => ({ id: p.id, name: p.name, url: p.url }))
       : [...new Map(store.list(config, { limit: 200 }).filter((l) => l.pad).map((l) => [l.pad.id, l.pad])).values()];
-    return { source: source(), networkVerified: config.live ? config.networkVerified : null, tradeFeeBps: config.tradeFeeBps, indexedBlock: Number(store.meta('idx.indexedBlock') ?? 0), updatedAt: now(), sort, nextCursor, pads, launches };
+    return { source: source(), networkVerified: config.live ? config.networkVerified : null, tradeFeeBps: config.tradeFeeBps, indexedBlock: Number(store.meta('idx.indexedBlock') ?? 0), updatedAt: now(), usd: usdRate(), sort, nextCursor, pads, launches };
   }));
-  r.get('/launches/:address', json((req) => ({ source: source(), launch: store.toApi(launchOr404(req.params.address), config) })));
+  r.get('/launches/:address', json((req) => ({ source: source(), usd: usdRate(), launch: store.toApi(launchOr404(req.params.address), config) })));
   r.get('/launches/:address/candles', json((req) => { launchOr404(req.params.address); return { source: source(), bars: store.candles(req.params.address, req.query.tf) }; }));
   r.get('/launches/:address/trades', json((req) => { launchOr404(req.params.address); return { source: source(), trades: store.trades(req.params.address, Math.min(200, Number(req.query.limit) || 50)) }; }));
   r.get('/launches/:address/holders', json((req) => ({ source: source(), holders: store.holders(launchOr404(req.params.address)).list })));
@@ -181,7 +181,7 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
     try { return await prepareRouterAction(provider, config, req.params.address, { action: req.body?.action, from, params: req.body?.params ?? {} }); } catch (e) { return routerError(e); }
   }));
 
-  r.get('/capabilities', json(() => capabilities(config, { agoraOn })));
+  r.get('/capabilities', json(() => capabilities(config, { agoraOn, usd: usdRate() })));
 
   r.get('/stream', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
@@ -225,6 +225,8 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
   return {
     onLaunch(address) { const raw = store.getRaw(address); if (raw) send('launch', store.toApi(raw, config)); evaluate(address, 'launch'); },
     onTrade(address) { const raw = store.getRaw(address); if (raw) { const l = store.toApi(raw, config); send('update', { address, priceHype: l.priceHype, volume5mHype: l.volume5mHype, holders: l.holders, stage: l.stage }); } evaluate(address, 'trade'); },
+    // Fields that arrive after the launch event (e.g. artwork found by the backfill).
+    onUpdate(address, fields) { send('update', { address, ...fields }); },
     close() { for (const res of clients.keys()) res.end(); clients.clear(); },
   };
 }

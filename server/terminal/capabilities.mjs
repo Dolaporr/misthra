@@ -10,7 +10,7 @@ const on = (extra = {}) => ({ available: true, reason: null, ...extra });
 export const FEED_WINDOWS = ['5m', '1h', '24h'];      // windows we actually compute
 export const CANDLE_TIMEFRAMES = ['15s', '1m', '5m', '15m', '1h'];
 
-export function capabilities(config, { agoraOn = false } = {}) {
+export function capabilities(config, { agoraOn = false, usd = null } = {}) {
   const live = Boolean(config.live);
   const v3Trade = live && Boolean(config.tradeReady);
   const venues = [
@@ -57,6 +57,7 @@ export function capabilities(config, { agoraOn = false } = {}) {
     walletTracking: on({ via: 'alerts', note: 'Watch a wallet with an alert of kind "wallet": you are notified when it buys or sells an indexed launch. No balances or P&L view yet.' }),
     portfolio: off('Not built yet. Use your wallet or the explorer for balances.'),
     orders: off('Limit and stop orders need an automated keeper and a scoped signing permission. Neither exists, so only instant trades you sign yourself are offered.'),
+    usdPrices: usd?.hypeUsd ? on({ source: usd.source, fetchedAt: usd.fetchedAt, maxAgeMs: usd.maxAgeMs, simulated: usd.source === 'simulated' }) : off(usd?.reason ?? 'No HYPE/USD price feed.'),
     social: off('No social data provider is connected.'),
     hypercore: off('HyperCore execution is not available on Elysium yet.'),
   };

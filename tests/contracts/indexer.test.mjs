@@ -115,12 +115,13 @@ test('indexer reads Montra v4 launches and swaps, attributes them to Montra, and
   };
   const store = createTerminalStore(new DatabaseSync(':memory:'));
   const launched = [], traded = [];
-  const indexer = createIndexer(store, provider, config, { onLaunch: (a) => launched.push(a), onTrade: (a) => traded.push(a) });
+  const updates = [];
+  const indexer = createIndexer(store, provider, config, { onLaunch: (a) => launched.push(a), onTrade: (a) => traded.push(a), onUpdate: (a, f) => updates.push([a, f]) });
 
   const poolId = keccak256('0x0a'), otherPool = keccak256('0x0b');
   const feeTo = await creator.getAddress();
-  const token = (await montra.connect(creator).launch.staticCall('Montra Coin', 'MTC', poolId, ZeroAddress, feeTo, await creator.getAddress())).toLowerCase();
-  await wait(montra.connect(creator).launch('Montra Coin', 'MTC', poolId, ZeroAddress, feeTo, await creator.getAddress()));
+  const token = (await montra.connect(creator).launch.staticCall('Montra Coin', 'MTC', 'ipfs://QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG', poolId, ZeroAddress, feeTo, await creator.getAddress())).toLowerCase();
+  await wait(montra.connect(creator).launch('Montra Coin', 'MTC', 'ipfs://QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG', poolId, ZeroAddress, feeTo, await creator.getAddress()));
   // Native HYPE is currency0, the token currency1. Buy: trader pays 2 HYPE (-), receives 1,000 tokens (+).
   const sqrtP = 2n ** 96n / 1000n; // ~0.000001 token1 per token0... value only matters for liquidity > 0
   await wait(manager.connect(trader).swap(poolId, -parseEther('2'), parseEther('1000'), sqrtP, 10n ** 20n));
@@ -150,4 +151,13 @@ test('indexer reads Montra v4 launches and swaps, attributes them to Montra, and
   assert.equal(Number(buy.amountHype), 2); assert.equal(Number(sell.amountToken), 500);
   assert.equal(buy.trader.toLowerCase(), (await trader.getAddress()).toLowerCase(), 'trader is the tx signer, not the PoolManager caller');
   assert.equal(traded.length, 2);
+  // Artwork comes from the launch calldata, normalised to https.
+  assert.equal(view.image, 'https://ipfs.io/ipfs/QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG');
+  // Backfill: a launch stored before artwork existed gets it from its creation block, and a stream update goes out.
+  const { source: _s, ...stored } = store.getRaw(token);
+  store.putLaunch({ ...stored, image: null, imageCheckedAt: null, createdTx: null }, 'live');
+  assert.equal(await indexer.backfillImages(), 1);
+  assert.equal(store.getRaw(token).image, 'https://ipfs.io/ipfs/QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG');
+  assert.deepEqual(updates.at(-1), [token, { image: 'https://ipfs.io/ipfs/QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG' }]);
+  assert.equal(await indexer.backfillImages(), 0, 'checked launches are not re-read');
 });

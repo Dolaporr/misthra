@@ -1,4 +1,6 @@
 /* A working terminal: quiet surfaces, shared dividers, fixed metric columns. */
+.market-cap-value{display:inline-flex;align-items:baseline;gap:4px;font-variant-numeric:tabular-nums}
+.market-cap-sim,.discovery-table .market-cap-sim{display:inline;font-size:8px;color:#decfa8;line-height:1;margin:0}
 .terminal-section-nav{display:flex;gap:20px;padding:0 22px;border-bottom:1px solid #2a3445;overflow-x:auto;background:#10151e}
 .terminal-section-nav button{min-height:44px;white-space:nowrap;color:#b8c8e3;font-size:12px;border-bottom:2px solid transparent}
 .terminal-section-nav button[aria-current=page]{color:#91b4ff;border-color:#91b4ff}

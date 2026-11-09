@@ -204,6 +204,45 @@ export function createIndexer(store, provider, config, { onLaunch = () => {}, on
     }
   }
 
+  // When the set of pad hooks changes (a pad added), pools those new hooks created in the
+  // recent past were skipped. Catch up once over the last `lookback` blocks: their pools,
+  // swaps and transfers only. New tokens had no balances before, and the normal scan only
+  // covers blocks after `idx.next`, so nothing is counted twice.
+  async function backfillNewHooks(lookback = 100_000) {
+    const want = [...hookToPad.keys()].sort();
+    const done = new Set(JSON.parse(store.meta('idx.v4hooks') ?? '[]'));
+    const fresh = new Map([...hookToPad].filter(([h]) => !done.has(h)));
+    const end = Number(store.meta('idx.next') ?? 0) - 1;
+    if (!fresh.size || !config.v4PoolManager || end <= 0) { if (end > 0) store.setMeta('idx.v4hooks', JSON.stringify(want)); return 0; }
+    const start = Math.max(config.startBlock ?? 0, end - lookback + 1);
+    const before = new Set(Object.keys(trackedV4()));
+    let added = 0;
+    for (let from = start; from <= end; from += rangeSize) {
+      const to = Math.min(end, from + rangeSize - 1);
+      const inits = await provider.getLogs({ address: config.v4PoolManager, topics: [MONTRA_T.initialize], fromBlock: from, toBlock: to });
+      for (const entry of inits) {
+        const l = parseInitialize(entry, quotes, fresh);
+        if (l && !store.getRaw(l.token)) { await onV4Initialize(entry); added += 1; }
+      }
+    }
+    const fresh4 = Object.fromEntries(Object.entries(trackedV4()).filter(([id]) => !before.has(id)));
+    const senders = new Map();
+    for (let from = start; from <= end && Object.keys(fresh4).length; from += rangeSize) {
+      const to = Math.min(end, from + rangeSize - 1);
+      const logs = [];
+      for (const group of chunks(Object.keys(fresh4), 50)) logs.push(...await provider.getLogs({ address: config.v4PoolManager, topics: [MONTRA_T.swap, group], fromBlock: from, toBlock: to }));
+      for (const group of chunks([...new Set(Object.values(fresh4))], 200)) logs.push(...await provider.getLogs({ address: group, topics: [T.transfer], fromBlock: from, toBlock: to }));
+      logs.sort((a, b) => a.blockNumber - b.blockNumber || a.index - b.index);
+      for (const entry of logs) {
+        if (entry.topics[0] === MONTRA_T.swap) await onV4Swap(entry, fresh4[lower(entry.topics[1])], senders);
+        else if (entry.topics[0] === T.transfer) onTransfer(entry);
+      }
+    }
+    store.setMeta('idx.v4hooks', JSON.stringify(want));
+    if (added) log(`backfilled ${added} launches for newly listed pad hooks`);
+    return added;
+  }
+
   // Launches indexed before artwork existed: find their creating transaction (the factory
   // log in their creation block that names the token) and read the image from it.
   async function backfillImages(limit = imageBackfillPerStep) {
@@ -233,6 +272,7 @@ export function createIndexer(store, provider, config, { onLaunch = () => {}, on
     const head = await provider.getBlockNumber();
     const safeHead = head - config.confirmations;
     let next = Number(store.meta('idx.next') ?? config.startBlock ?? Math.max(0, safeHead - 10_000));
+    await backfillNewHooks().catch((err) => log(`hook backfill: ${err.message}`));
     await backfillImages().catch((err) => log(`image backfill: ${err.message}`));
     if (next > safeHead) return { from: next, to: next - 1, head };
     const to = Math.min(safeHead, next + rangeSize - 1);
@@ -251,7 +291,7 @@ export function createIndexer(store, provider, config, { onLaunch = () => {}, on
   }
 
   return {
-    backfillImages,
+    backfillImages, backfillNewHooks,
     step, refreshSafety,
     start(ms = 2000) {
       timer ??= setInterval(async () => {

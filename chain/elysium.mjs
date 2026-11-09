@@ -61,7 +61,10 @@ export function loadElysiumConfig(env = process.env) {
 export function loadPads(file) {
   if (!file) return [];
   const list = JSON.parse(readFileSync(file, 'utf8'));
-  return list.map((p) => ({ id: String(p.id), name: String(p.name), url: p.url || null, locksLiquidity: p.locksLiquidity === true, contracts: (p.contracts || []).map(addr).filter(Boolean), v4Hooks: (p.v4Hooks || []).map(addr).filter(Boolean) }));
+  // A malformed address is an error, not something to drop silently: a dropped hook means
+  // that pad's launches never appear.
+  const strict = (where) => (value) => { const a = addr(String(value).toLowerCase()); if (!a) throw new Error(`Pads file: invalid address ${value} in ${where}`); return a; };
+  return list.map((p) => ({ id: String(p.id), name: String(p.name), url: p.url || null, locksLiquidity: p.locksLiquidity === true, contracts: (p.contracts || []).map(strict(`${p.id}.contracts`)), v4Hooks: (p.v4Hooks || []).map(strict(`${p.id}.v4Hooks`)) }));
 }
 
 export function explorerLink(config, kind, address) {

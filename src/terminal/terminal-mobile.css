@@ -1,0 +1,109 @@
+.terminal-bottom-dock{display:none}
+.terminal-section-nav button{display:flex;align-items:center;gap:6px}
+.terminal-display:not(.hide-token-name) .pulse-workspace.is-compact .pulse-token-name{display:block}
+.terminal-settings-panel{min-width:0}
+.modal:has(.terminal-settings-panel){width:min(620px,calc(100vw - 24px));max-height:calc(100dvh - 28px);padding:24px;overflow:auto}
+.settings-tabs{display:flex;gap:6px;overflow:auto;padding:3px 0 16px;scrollbar-width:thin}
+.settings-tabs button{min-height:44px;padding:10px 14px;white-space:nowrap;border-radius:24px;color:#b6c0d4;font-size:13px}
+.settings-tabs button[aria-pressed=true]{background:#26344b;color:#eef1f7}
+.terminal-setting{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:20px 0;border-bottom:1px solid #293246;font-size:15px;line-height:1.45}
+.terminal-setting span{flex:1}.terminal-setting small{display:block;color:#b6c0d4;font-size:12px;margin-top:5px;max-width:34ch}
+.terminal-setting input[type=checkbox]{appearance:auto;accent-color:#7fa8ff;width:22px;height:22px;flex:0 0 22px;cursor:pointer}
+.terminal-setting input[role=switch]{appearance:none;position:relative;width:42px;height:24px;flex-basis:42px;border:1px solid #59677f;border-radius:20px;background:#293246;transition:background .15s}
+.terminal-setting input[role=switch]::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#eef1f7;transition:transform .15s}
+.terminal-setting input[role=switch]:checked{background:#315bd5;border-color:#7fa8ff}.terminal-setting input[role=switch]:checked::after{transform:translateX(18px)}
+.terminal-setting input[role=switch]:focus-visible{outline:2px solid #7fa8ff;outline-offset:3px}
+.settings-footer{display:flex;justify-content:space-between;gap:12px;padding-top:24px}.settings-footer .button{min-height:44px}
+.settings-note{font-size:12px;line-height:1.6;color:#b6c0d4;margin-top:14px}
+.terminal-filter-fields{display:grid;gap:18px}.terminal-filter-fields>label:not(.terminal-setting),.metric-range-inputs label{display:grid;gap:8px;font-size:13px;color:#b6c0d4}
+.terminal-filter-fields input:not([type=checkbox]),.terminal-filter-fields select,.metric-range-inputs input{min-height:44px;width:100%;min-width:0;font-size:16px}
+.metric-range-inputs{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+.metric-range-legend{display:flex;gap:12px;font-size:11px}.metric-range-legend span:nth-child(1){color:#7fa8ff}.metric-range-legend span:nth-child(2){color:#eed17d}.metric-range-legend span:nth-child(3){color:#76d4a6}
+.terminal-display.images-circle .is-terminal .launch-avatar{border-radius:50%}
+.terminal-display.hide-token-name .is-terminal .pulse-token-name{display:none}
+.terminal-display.hide-token-volume .is-terminal .pulse-market-numbers>div:nth-child(2){display:none}
+.terminal-display.hide-token-checks .is-terminal .pulse-row-signals{visibility:hidden}
+.terminal-display.hide-token-age .is-terminal .pulse-token-age{display:none}
+.terminal-display.metrics-large .is-terminal .pulse-market-numbers dd,.terminal-display.metrics-large .is-terminal .discovery-table .market-cap-value{font-size:17px}
+.terminal-display.hide-token-volume .discovery-table th:nth-child(5),.terminal-display.hide-token-volume .discovery-table td:nth-child(5),.terminal-display.hide-token-checks .discovery-table th:nth-child(7),.terminal-display.hide-token-checks .discovery-table td:nth-child(7),.terminal-display.hide-token-age .discovery-table th:nth-child(2),.terminal-display.hide-token-age .discovery-table td:nth-child(2){display:none}
+.terminal-display.density-compact .discovery-table td{padding-top:8px;padding-bottom:8px}
+.terminal-tool-buttons{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:16px 0}
+.terminal-tool-buttons button{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:9px 14px;border:1px solid #3b455a;border-radius:10px;color:#eef1f7;font-size:13px}
+.terminal-icon-button{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border-radius:10px;color:#b6c0d4}
+@media(max-width:900px){
+ .terminal-display .is-terminal .header{height:60px;min-height:60px;padding:6px 14px;border-radius:0;border-width:0 0 1px;background:#0c0f16}
+ .terminal-display .is-terminal .header .wordmark{width:40px;height:40px;overflow:hidden;display:flex;align-items:center}
+ .terminal-display .is-terminal .header .wordmark .misthra-logo{display:none}
+ .terminal-display .is-terminal .header .wordmark::after{content:'';display:block;width:32px;height:32px;background:url('/brand/misthra-mark.svg') center/contain no-repeat}
+ .terminal-display .is-terminal .header-actions{gap:8px}
+ .terminal-display .is-terminal .header-actions>button{border-radius:50%;background:#171e2b;border:0}
+ .terminal-display .is-terminal .terminal-section-nav{display:none}
+ .terminal-display .terminal-section-nav button{font-size:11px;min-height:40px}
+ .terminal-display .terminal-phone-navigation{display:none}
+ .terminal-display .is-terminal main{padding-bottom:80px}
+ .terminal-bottom-dock{position:fixed;bottom:0;left:0;right:0;z-index:35;display:grid;grid-template-columns:repeat(6,1fr);padding:7px 4px max(8px,env(safe-area-inset-bottom));background:#0c0f16;border-top:1px solid #293246}
+ .terminal-bottom-dock a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:48px;color:#a3afc5;font-size:10px;text-decoration:none}
+ .terminal-bottom-dock a[aria-current=page]{color:#eef1f7}.terminal-bottom-dock a[aria-current=page] svg{color:#7fa8ff}
+ .terminal-display .is-terminal .pulse-workspace{padding:14px 12px 0}
+ .terminal-display .is-terminal .terminal-head{gap:12px;margin-bottom:10px}
+ .terminal-display .is-terminal .terminal-title h1{font-size:21px;line-height:1.2}.terminal-display .is-terminal .terminal-title{gap:8px}
+ .terminal-display .is-terminal .pulse-head-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;width:100%}
+ .terminal-display .is-terminal button.terminal-search{height:44px;min-width:0;padding:10px;font-size:12px}
+ .terminal-display .is-terminal button.terminal-search>span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+ .terminal-display .is-terminal .pulse-display-button{min-height:44px;font-size:12px;padding:10px}
+ .terminal-display .is-terminal .pulse-data-banner{padding:7px 9px;margin-bottom:10px;gap:8px;min-height:0}
+ .terminal-display .is-terminal .pulse-data-banner p{font-size:10px;line-height:1.4}
+ .terminal-display .is-terminal .pulse-toolbar{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px}
+ .terminal-display .is-terminal .pulse-view-switch{gap:3px;flex-wrap:nowrap;min-width:0}
+ .terminal-display .is-terminal .pulse-view-switch button,.terminal-display .is-terminal .pulse-view-switch>a{min-width:40px;min-height:44px;padding:8px;font-size:11px}
+ .terminal-display .is-terminal .control-label{display:none}
+ .terminal-display .is-terminal .pulse-toolbar-actions{display:flex;gap:3px;margin:0;min-width:0}
+ .terminal-display .is-terminal .pulse-sort select{max-width:92px;min-height:44px;padding:8px 5px;font-size:10px}
+ .terminal-display .is-terminal .pulse-freeze{width:40px;min-height:44px;padding:8px;justify-content:center}
+ .terminal-display .is-terminal .pulse-quick-tools{display:flex;gap:8px;margin:0 0 10px;padding:0;min-height:44px}
+ .terminal-display .is-terminal .pulse-quick-tools>span{display:none}
+ .terminal-display .is-terminal .pulse-quick-tools .check{font-size:11px;white-space:nowrap}
+ .terminal-display .is-terminal .pulse-quick-tools input:not([type=checkbox]){width:90px;min-height:38px;font-size:14px}
+ .terminal-display .is-terminal .pulse-tabs button{font-size:11px;min-height:44px;padding:8px 4px}
+ .terminal-display .is-terminal .pulse-tabs span{display:inline;margin-left:6px;font-size:10px}
+ .terminal-display .is-terminal .pulse-column-settings{min-height:46px}
+ .terminal-display .is-terminal .pulse-column-filter-toggle{min-height:44px;font-size:11px}
+ .terminal-display .is-terminal .pulse-presets button{min-width:40px;min-height:44px}
+ .terminal-display .is-terminal .pulse-token-row{padding:10px 8px;gap:2px 7px;grid-template-columns:minmax(0,1fr) 100px;grid-template-rows:minmax(52px,auto) 36px}
+ .terminal-display .is-terminal .pulse-token-row .launch-avatar{width:48px;height:48px;flex-shrink:0;border-radius:8px}
+ .terminal-display .is-terminal .pulse-token-row .launch-names>strong{font-size:13px;gap:5px}
+ .terminal-display .is-terminal .pulse-token-name{font-size:10px}
+ .terminal-display .is-terminal .pulse-token-venue{font-size:8px}
+ .terminal-display .is-terminal .pulse-market-numbers dd{font-size:14px}.terminal-display .is-terminal .pulse-market-numbers dt{font-size:8px}
+ .terminal-display .is-terminal .pulse-row-signals{font-size:9px;gap:7px}
+ .terminal-display .is-terminal .pulse-row-actions .pulse-row-action{min-width:44px;min-height:36px;font-size:11px;padding:6px 10px;border-radius:18px;gap:5px}
+ .terminal-display .is-terminal .pulse-watch-button{height:40px;width:36px}.terminal-display .is-terminal .pulse-row-change{top:49px;font-size:9px}
+ .terminal-display .is-terminal .pulse-statusbar{position:static;margin:0;padding:4px 0;font-size:9px;min-height:36px}
+ .terminal-display .is-terminal .pulse-updated{display:none}
+ .terminal-display .is-terminal .terminal-tool-page{padding:18px 12px 24px}
+ .terminal-display .is-terminal .terminal-tool-page h1{font-size:23px;margin-bottom:7px}
+ .terminal-display .is-terminal .terminal-tool-page>header>p{font-size:12px;line-height:1.6}
+ .terminal-display .is-terminal .terminal-tool-page>.page-shell{padding:12px 0 24px;max-width:none}
+ .terminal-display .is-terminal .terminal-tool-page .paper-heading h1{font-size:21px}
+ .terminal-display .is-terminal .terminal-tool-page .paper-intro{font-size:12px;line-height:1.6;margin:12px 0 18px}
+ .terminal-display .is-terminal .terminal-tool-page .paper-positions{padding:16px}
+ .terminal-display .is-terminal .terminal-tool-page .paper-totals{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}
+ .terminal-display .is-terminal .terminal-tool-page .paper-totals dt{font-size:10px;line-height:1.5}
+ .terminal-display .is-terminal .terminal-tool-page .paper-totals dd{font-size:17px;margin:7px 0}
+ .terminal-display .is-terminal .terminal-tool-page .paper-section-heading h2,.terminal-display .is-terminal .terminal-tool-page .alert-form h2{font-size:17px}
+ .terminal-display .is-terminal .terminal-tool-page .alerts-page .page-heading{margin-bottom:16px}
+ .terminal-display .is-terminal .terminal-tool-page .alerts-page .page-heading h1{font-size:19px}
+ .terminal-display .is-terminal .terminal-tool-page .alerts-page .page-heading p{font-size:12px;line-height:1.6}
+ .terminal-display .is-terminal .terminal-tool-page .alert-form{padding:16px}
+ .terminal-display .is-terminal .discovery-controls{gap:8px;align-items:center;font-size:11px;margin:10px 0}
+ .terminal-display .is-terminal .coin-mobile-jumps{position:sticky;top:0;z-index:4;background:#0c0f16;padding:6px 0;gap:6px}
+ .terminal-display .is-terminal .coin-mobile-jumps button{flex:1;min-width:0;padding:8px;font-size:11px}
+ .terminal-display .is-terminal .coin-page{padding:14px 12px 20px}
+ .terminal-display.images-circle .is-terminal .pulse-token-row .launch-avatar{border-radius:50%}
+ .terminal-display.metrics-large .is-terminal .pulse-market-numbers dd{font-size:17px}
+ .terminal-display .modal:has(.terminal-settings-panel){padding:20px;max-height:calc(100dvh - 24px)}
+ .terminal-display .settings-tabs{padding-bottom:12px}.terminal-display .settings-tabs button{font-size:12px;padding:9px 12px}
+ .terminal-display .terminal-setting{padding:18px 0;font-size:14px}
+}
+@media(max-width:360px){.terminal-display .is-terminal .pulse-toolbar{gap:3px}.terminal-display .is-terminal .pulse-sort select{max-width:76px}.terminal-display .is-terminal .pulse-view-switch button,.terminal-display .is-terminal .pulse-view-switch>a{padding:6px;min-width:34px}.terminal-display .is-terminal .pulse-token-row{grid-template-columns:minmax(0,1fr) 88px}.terminal-display .is-terminal .pulse-token-row .launch-avatar{width:40px;height:40px}.terminal-display .is-terminal .pulse-token-row .launch-names>strong{font-size:12px}.terminal-display .is-terminal .pulse-row-signals{gap:4px;font-size:8px}.terminal-display .is-terminal .pulse-token-age{font-size:8px}.metric-range-inputs{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.terminal-setting input[role=switch],.terminal-setting input[role=switch]::after{transition:none}}

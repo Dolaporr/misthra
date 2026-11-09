@@ -72,9 +72,9 @@ export function TradePanel({launch,autoFocus,source}:{launch:Launch;autoFocus:bo
       send:async tx=>{
         if(recovering)throw new Error('Receipt recovered. Get a fresh quote and review any remaining transaction steps.');
         if(ticket!==request.current)throw new Error('The quote changed. Request a fresh quote.');
-        const eth=(window as unknown as {ethereum?:{request:(args:{method:string;params?:unknown[]})=>Promise<unknown>}}).ethereum;
+        const eth=(window as unknown as {ethereum?:{request:(args:{method:string;params?:unknown[]})=>Promise<unknown>;on?:(event:string,listener:()=>void)=>void;removeListener?:(event:string,listener:()=>void)=>void}}).ethereum;
         if(!eth||!config)throw new Error('Reconnect your wallet before continuing.');
-        return sendReviewedTrade(activeQuote,tx,identity.address!,config.network.chainId,{request:args=>eth.request(args),now:Date.now,isCurrent:()=>ticket===request.current});
+        return sendReviewedTrade(activeQuote,tx,identity.address!,config.network.chainId,{request:args=>eth.request(args),watch:invalidate=>{if(!eth.on||!eth.removeListener)throw new Error('This wallet cannot monitor account changes. Use a compatible EVM wallet.');eth.on('accountsChanged',invalidate);eth.on('chainChanged',invalidate);return()=>{eth.removeListener?.('accountsChanged',invalidate);eth.removeListener?.('chainChanged',invalidate)}},now:Date.now,isCurrent:()=>ticket===request.current});
       },confirm:confirmInWallet,progress:(index,state)=>{try{record(index,state)}catch{if(ticket===request.current)setRecoveryNote('Receipt recovery could not be saved on this device. Keep this page open and save the transaction hash.')}if(ticket===request.current)setProgress(previous=>previous.map((s,i)=>i===index?state:s))},
     });if(ticket===request.current)notify('Swap confirmed in your wallet.')}catch(e){if(ticket===request.current)setError((e as Error).message)}finally{if(ticket===request.current)setBusy(false)}
   };

@@ -16,16 +16,29 @@ test('live quote requires exact amounts, current expiry, sender and chain on eve
 });
 test('send checks expiry after wallet reads and never submits on wrong account or chain',async()=>{
  const calls=[];
- const io={request:async args=>{calls.push(args);return args.method==='eth_accounts'?[wallet]:args.method==='eth_chainId'?'0x1863d':'hash'},now:()=>2000,isCurrent:()=>true};
+ const io={request:async args=>{calls.push(args);return args.method==='eth_accounts'?[wallet]:args.method==='eth_chainId'?'0x1863d':'hash'},now:()=>2000,isCurrent:()=>true,watch:()=>()=>{}};
  assert.equal(await sendReviewedTrade(quote,tx,wallet,99901,io),'hash');
  assert.equal(calls.at(-1).params[0].value,'0x1');
+ assert.equal(calls.at(-1).params[0].chainId,'0x1863d');
  await assert.rejects(sendReviewedTrade(quote,{...tx,to:wallet},wallet,99901,io),/not part/);
  for(const overrides of [{now:()=>21000},{request:async a=>a.method==='eth_accounts'?['other']:assert.fail('must stop')},{request:async a=>a.method==='eth_accounts'?[wallet]:a.method==='eth_chainId'?'0x1':assert.fail('must not send')}])await assert.rejects(sendReviewedTrade(quote,tx,wallet,99901,{...io,...overrides}));
 });
 test('navigation during an asynchronous wallet read cancels before opening a signature',async()=>{
  let current=true,sends=0;
- await assert.rejects(sendReviewedTrade(quote,tx,wallet,99901,{request:async args=>{if(args.method==='eth_accounts')return [wallet];if(args.method==='eth_chainId'){current=false;return '0x1863d'}sends++;return 'hash'},now:()=>2000,isCurrent:()=>current}),/quote changed/);
+ await assert.rejects(sendReviewedTrade(quote,tx,wallet,99901,{request:async args=>{if(args.method==='eth_accounts')return [wallet];if(args.method==='eth_chainId'){current=false;return '0x1863d'}sends++;return 'hash'},now:()=>2000,isCurrent:()=>current,watch:()=>()=>{}}),/quote changed/);
  assert.equal(sends,0);
+});
+test('wallet changes during asynchronous reads cancel signing and always release the watch',async()=>{
+ for(const phase of ['eth_accounts','eth_chainId']){
+  let invalidate,sends=0,stopped=0;
+  const io={watch:fn=>{invalidate=fn;return()=>{stopped++}},now:()=>2000,isCurrent:()=>true,request:async args=>{if(args.method===phase)invalidate();if(args.method==='eth_accounts')return [wallet];if(args.method==='eth_chainId')return '0x1863d';sends++;return 'hash'}};
+  await assert.rejects(sendReviewedTrade(quote,tx,wallet,99901,io),/wallet changed/);
+  assert.equal(sends,0);assert.equal(stopped,1);
+ }
+ let stopped=0;
+ const io={watch:()=>()=>{stopped++},now:()=>2000,isCurrent:()=>true,request:async args=>args.method==='eth_accounts'?[wallet]:args.method==='eth_chainId'?'0x1863d':'hash'};
+ assert.equal(await sendReviewedTrade(quote,tx,wallet,99901,io),'hash');assert.equal(stopped,1);
+ await assert.rejects(sendReviewedTrade(quote,tx,wallet,99901,{...io,request:async()=>{throw new Error('rejected')}}),/rejected/);assert.equal(stopped,2);
 });
 test('refreshes preserve review only when exact economics and authorization match',()=>{
  assert.equal(sameQuoteReview(quote,{...quote,quotedAt:2000,expiresAt:22000,deadline:122000,tx:{...tx,data:gateway.encodeFunctionData('buy',[wallet,3000,90071992547409930000n,122])}}),true);

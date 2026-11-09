@@ -2,7 +2,7 @@ import type { Tx } from './model';
 import type { StepProgress } from './trade-flow';
 
 export type RouterAction = { action: string; who: 'anyone'|'creator'; params?: Record<string,string|number|null>; amount?: string|null; enabled: boolean; reason: string|null };
-type BaseSnapshot = { source:'live'|'simulated'; network:{chainId:number;verified:boolean|null}; asOf:{block:number;timestamp:number|null;confirmations:number}; router:string; reason:string|null };
+type BaseSnapshot = { source:'live'|'simulated'; network:{chainId:number;verified:boolean|null}; asOf:{block:number;timestamp:number|null;confirmations:number}; router:string; reason:string|null;referredBy?:{id:string;name:string}|null };
 export type ActiveRouter = BaseSnapshot & {
   status:'ok'; creator:string; bound:boolean; subject:string|null; protocolFeeBps:number;
   verification:{factory:string|null;implementation:string|null;codeMatchesClone:boolean|null;configHash:string};

@@ -8,7 +8,9 @@ export function useLaunchFeed(){
   useEffect(()=>{
     const feed=connectFeed<Feed>({visible:!document.hidden,fetch:()=>api<Feed>('/launches?limit=200&sort=age'),data:setData,error:setError,mode:setTransport,stream:typeof EventSource==='undefined'?undefined:()=>new EventSource('/api/stream',{withCredentials:true}),later:(fn,ms)=>window.setTimeout(fn,ms),cancel:id=>window.clearTimeout(id as number|undefined)});
     connection.current=feed;const visibility=()=>feed.setVisible(!document.hidden);visibility();document.addEventListener('visibilitychange',visibility);
-    return()=>{document.removeEventListener('visibilitychange',visibility);feed.close();connection.current=null};
+    // Refresh dollar-rate metadata even when no new pool/trade event arrives.
+    const rateTimer=window.setInterval(()=>feed.refresh(),30000);
+    return()=>{window.clearInterval(rateTimer);document.removeEventListener('visibilitychange',visibility);feed.close();connection.current=null};
   },[]);
   return {data,error,transport,reload:()=>connection.current?.refresh()};
 }

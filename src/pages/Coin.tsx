@@ -6,6 +6,8 @@ import { CoinPaperPosition } from '../terminal/PaperPositions';
 import { Empty } from '../components/ui';
 import {useApp} from '../state';
 import {PoolVenue} from '../terminal/PoolVenue';
+import {MarketCap,UsdProvider} from '../terminal/MarketCap';
+import {TokenArtwork} from '../terminal/TokenArtwork';
 import {externalVenueUrl} from '../terminal/trade-access';
 import { SafetyIcon, SourceBadge } from './Terminal';
 import { STAGES, age, hype, pct, shortAddr, usePoll, type Bar, type Holder, type Launch, type Trade } from '../terminal/model';
@@ -14,7 +16,7 @@ const TFS = ['15s', '1m', '5m', '15m', '1h'] as const;
 
 export function Coin({ address }: { address: string }) {
   const {config}=useApp();
-  const { data, error } = usePoll<{ source: string; launch: Launch }>(`/launches/${address}`, 4000);
+  const { data, error } = usePoll<{ source: string; launch: Launch; usd:import("../terminal/market-display").UsdRate }>(`/launches/${address}`, 4000);
   const [tf, setTf] = useState<(typeof TFS)[number]>('1m');
   const bars = usePoll<{ bars: Bar[] }>(`/launches/${address}/candles?tf=${tf}`, 5000).data?.bars ?? [];
   const trades = usePoll<{ trades: Trade[] }>(`/launches/${address}/trades?limit=30`, 4000).data?.trades ?? [];
@@ -29,11 +31,11 @@ export function Coin({ address }: { address: string }) {
   const feeExplorer=l.feeRecipient&&/^0x[0-9a-fA-F]{40}$/.test(l.feeRecipient)&&config?.network.explorerUrl?externalVenueUrl(config.network.explorerUrl.replace(/\/$/,'')+'/address/'+l.feeRecipient):null;
   const routedByMisthra=Boolean(l.feeRecipient&&l.router&&l.feeRecipient.toLowerCase()===l.router.address.toLowerCase());
 
-  return <div className="coin-page">
+  return <UsdProvider snapshot={data}><div className="coin-page">
     <a className="back-link" href="#/terminal"><ArrowLeft size={15} /> Terminal</a>
     <p className={data.source==='simulated'?'sim-note':'pulse-source-note'}>{data.source==='simulated'?'Simulated prices and activity. Paper trading only.':data.source==='live'?'Live Elysium indexer data. Trading availability depends on the pool.':'Data source unavailable. Trading is disabled.'}</p>
     <header className="coin-head">
-      <span className="launch-avatar large" aria-hidden="true">{l.image ? <img src={l.image} alt="" /> : l.symbol.slice(0, 2)}</span>
+      <span className="launch-avatar large" aria-hidden="true"><TokenArtwork image={l.image} symbol={l.symbol}/></span>
       <div>
         <h1>{l.symbol} <span className="muted">{l.name}</span></h1>
         <p className="coin-meta"><SourceBadge source={data.source} /><span className="badge">{l.pad?.name ?? 'Pad not detected'}</span><PoolVenue pool={l.pool}/>{stage && <span className="badge" title={stage.help}>{stage.label}</span>}<span className="muted">Created {age(l.createdAt)} ago</span><button className="copy" onClick={() => navigator.clipboard?.writeText(l.address)} title="Copy token address" aria-label={`Copy ${l.symbol} token address`}>{shortAddr(l.address)}</button></p>
@@ -56,7 +58,7 @@ export function Coin({ address }: { address: string }) {
           <CandleChart bars={bars} />
         </section>
         <dl className="coin-stats panel">
-          {[['Market cap', `${hype(l.mcapHype)} HYPE`], [l.pool.venue==='uniswap-v4'?'Liquidity (est.)':'Liquidity', `${hype(l.liquidityHype)} HYPE`], ['5m volume', `${hype(l.volume5mHype)} HYPE`], ['24h volume', `${hype(l.volume24hHype)} HYPE`], ['24h trades', l.txCount24h], ['24h traders', l.traders24h], ['Holders', l.holders], ['Top 10', l.top10Pct == null ? '–' : `${l.top10Pct}%`]].map(([k, v]) => <div key={String(k)}><dt>{k}</dt><dd>{v}</dd></div>)}
+          {[['Market cap · USD', <MarketCap value={l.mcapUsd}/>], [l.pool.venue==='uniswap-v4'?'Liquidity (est.)':'Liquidity', `${hype(l.liquidityHype)} HYPE`], ['5m volume', `${hype(l.volume5mHype)} HYPE`], ['24h volume', `${hype(l.volume24hHype)} HYPE`], ['24h trades', l.txCount24h], ['24h traders', l.traders24h], ['Holders', l.holders], ['Top 10', l.top10Pct == null ? '–' : `${l.top10Pct}%`]].map(([k, v]) => <div key={String(k)}><dt>{k}</dt><dd>{v}</dd></div>)}
         </dl>
         <section className="panel"><h2>Recent trades</h2>
           {!trades.length ? <p className="muted small">No trades recorded yet.</p> : <div className="coin-trades-scroll" tabIndex={0} role="region" aria-label="Recent trades table"><table className="mini-table"><caption className="sr-only">Recent indexed trades. Amounts in HYPE and token units.</caption><thead><tr><th scope="col">Age</th><th scope="col">Side</th><th scope="col">HYPE</th><th scope="col">Tokens</th><th scope="col">Trader</th></tr></thead><tbody>
@@ -82,5 +84,5 @@ export function Coin({ address }: { address: string }) {
         </section>
       </aside>
     </div>
-  </div>;
+  </div></UsdProvider>;
 }

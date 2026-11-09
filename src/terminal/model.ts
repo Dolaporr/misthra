@@ -1,6 +1,7 @@
 // Types from docs/terminal-api.md, plus small helpers shared by the terminal pages.
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import type {UsdRate} from './market-display';
 
 export type Source = 'live' | 'simulated';
 export type Stage = 'new' | 'stretch' | 'migrated';
@@ -16,13 +17,14 @@ export type Launch = {
   address: string; name: string; symbol: string; decimals: number; image: string | null;
   pad: Pad; stage: Stage; createdAt: number; createdBlock: number; creator: string; pool: Pool;
   priceHype: string; mcapHype: string; liquidityHype: string; volume5mHype: string; volume24hHype: string;
+  mcapUsd:string|null;
   txCount24h: number; traders24h: number; holders: number; top10Pct: number | null;
   change5mPct: number | null; change1hPct: number | null;
   traction: Traction | null; safety: Safety; ai: AiRead; router: RouterRef;
   trade: TradeAvailability; feeRecipient: string | null;
   links: { explorer: string | null; pad: string | null; pool: string | null };
 };
-export type Feed = { source: Source; networkVerified: boolean | null; tradeFeeBps: number; indexedBlock: number; updatedAt: number; pads: NonNullable<Pad>[]; launches: Launch[] };
+export type Feed = { source: Source; networkVerified: boolean | null; tradeFeeBps: number; indexedBlock: number; updatedAt: number; usd:UsdRate; pads: NonNullable<Pad>[]; launches: Launch[] };
 export type Bar = { t: number; o: string; h: string; l: string; c: string; v: string };
 export type Trade = { tx: string; t: number; side: 'buy' | 'sell'; trader: string; amountHype: string; amountToken: string };
 export type Holder = { address: string; pct: number; tags: string[] };

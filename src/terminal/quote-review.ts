@@ -26,15 +26,18 @@ export function sameQuoteReview(a:Quote,b:Quote):boolean{
  const key=(q:Quote)=>JSON.stringify({source:q.source,via:q.via,units:q.units,amountOut:q.amountOut,minOut:q.minOut,feeHype:q.feeHype,feeBps:q.feeBps,priceImpactBps:q.priceImpactBps,route:q.route,slippageBps:q.slippageBps,tx:q.tx&&{...call(q.tx),data:reviewedData(q,q.tx)},approvals:(q.approvals?.length?q.approvals:q.approveTx?[q.approveTx]:[]).map(tx=>({...call(tx),data:tx.data}))});
  return Boolean(a.units&&b.units)&&key(a)===key(b);
 }
-export async function sendReviewedTrade(quote:Quote,tx:Tx,wallet:string,configuredChain:number,io:{request:(args:{method:string;params?:unknown[]})=>Promise<unknown>;now:()=>number;isCurrent:()=>boolean}):Promise<string>{
+export async function sendReviewedTrade(quote:Quote,tx:Tx,wallet:string,configuredChain:number,io:{request:(args:{method:string;params?:unknown[]})=>Promise<unknown>;now:()=>number;isCurrent:()=>boolean;watch:(invalidate:()=>void)=>()=>void}):Promise<string>{
  const calls=[...(quote.approvals?.length?quote.approvals:quote.approveTx?[quote.approveTx]:[]),quote.tx];
  if(!calls.some(call=>call&&call.from===tx.from&&call.to===tx.to&&call.data===tx.data&&call.value===tx.value&&call.chainId===tx.chainId))throw new Error('This transaction is not part of the reviewed quote.');
+ let changed=false;const stop=io.watch(()=>{changed=true});
+ try{
  const accounts=await io.request({method:'eth_accounts'}) as string[];
  if(!accounts[0]||accounts[0].toLowerCase()!==wallet.toLowerCase())throw new Error('Your wallet account changed. Sign in with the account used for this quote.');
  const chain=Number(await io.request({method:'eth_chainId'}));
  if(chain!==configuredChain)throw new Error('Switch your wallet to the configured Elysium network before continuing.');
  const issue=liveQuoteIssue(quote,accounts[0],chain,io.now());
  if(issue)throw new Error(issue);
- if(!io.isCurrent())throw new Error('The quote changed. Request a fresh quote.');
- return await io.request({method:'eth_sendTransaction',params:[{from:wallet,to:tx.to,data:tx.data,value:'0x'+BigInt(tx.value||'0').toString(16)}]}) as string;
+ if(changed||!io.isCurrent())throw new Error('The quote changed or your wallet changed. Request a fresh quote.');
+ return await io.request({method:'eth_sendTransaction',params:[{from:wallet,to:tx.to,data:tx.data,value:'0x'+BigInt(tx.value||'0').toString(16),chainId:'0x'+configuredChain.toString(16)}]}) as string;
+ }finally{stop()}
 }

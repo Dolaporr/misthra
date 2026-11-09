@@ -31,7 +31,7 @@ export function Coin({ address }: { address: string }) {
   const feeExplorer=l.feeRecipient&&/^0x[0-9a-fA-F]{40}$/.test(l.feeRecipient)&&config?.network.explorerUrl?externalVenueUrl(config.network.explorerUrl.replace(/\/$/,'')+'/address/'+l.feeRecipient):null;
   const routedByMisthra=Boolean(l.feeRecipient&&l.router&&l.feeRecipient.toLowerCase()===l.router.address.toLowerCase());
 
-  return <UsdProvider usd={data.usd}><div className="coin-page">
+  return <UsdProvider snapshot={data}><div className="coin-page">
     <a className="back-link" href="#/terminal"><ArrowLeft size={15} /> Terminal</a>
     <p className={data.source==='simulated'?'sim-note':'pulse-source-note'}>{data.source==='simulated'?'Simulated prices and activity. Paper trading only.':data.source==='live'?'Live Elysium indexer data. Trading availability depends on the pool.':'Data source unavailable. Trading is disabled.'}</p>
     <header className="coin-head">

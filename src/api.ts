@@ -1,9 +1,12 @@
 import { formatUnits, parseUnits } from 'ethers';
 export class ApiError extends Error { constructor(message:string,public status:number){super(message)} }
+const receipts=new WeakMap<object,{receivedAt:number;serverAt:number}>();
+export const apiReceipt=(value:object)=>receipts.get(value);
 export async function api<T>(path:string, options:RequestInit={}):Promise<T>{
   const response=await fetch(`/api${path}`,{credentials:'include',...options,headers:{...(options.body instanceof FormData?{}:{'Content-Type':'application/json'}),...options.headers}});
   const data=await response.json().catch(()=>({error:'The service returned an unreadable response.'}));
   if(!response.ok) throw new ApiError(data.error||`Request failed (${response.status}).`,response.status);
+  if(data&&typeof data==='object')receipts.set(data,{receivedAt:performance.now(),serverAt:Date.parse(response.headers.get('Date')||'')});
   return data as T;
 }
 export const post=<T,>(path:string,body:unknown={})=>api<T>(path,{method:'POST',body:JSON.stringify(body)});

@@ -20,6 +20,7 @@ export function Coin({ address }: { address: string }) {
   const trades = usePoll<{ trades: Trade[] }>(`/launches/${address}/trades?limit=30`, 4000).data?.trades ?? [];
   const holders = usePoll<{ holders: Holder[] }>(`/launches/${address}/holders`, 15000).data?.holders ?? [];
   const wantsBuy = window.location.hash.includes('buy=1');
+  const jump=(id:string)=>{const target=document.getElementById(id);target?.scrollIntoView({block:'start',behavior:'auto'});target?.focus({preventScroll:true})};
 
   if (error && !data) return <div className="page-shell"><Empty title="This launch could not be loaded."><p>{error}</p><p><a href="#/terminal">Back to the terminal</a></p></Empty></div>;
   if (!data) return <div className="page-shell"><p className="muted">Loading launch…</p></div>;
@@ -47,10 +48,11 @@ export function Coin({ address }: { address: string }) {
       </nav>
     </header>
 
+    <nav className="coin-mobile-jumps" aria-label="Coin sections"><button onClick={()=>jump('coin-chart')}>Chart</button><button onClick={()=>jump('coin-trade')}>Trade</button><button onClick={()=>jump('coin-checks')}>Checks</button></nav>
     <div className="coin-grid">
       <div className="coin-left">
         <section className="panel chart-panel" aria-label="Price chart">
-          <div className="panel-head"><h2>Price in HYPE</h2><div className="tf-switch" role="group" aria-label="Timeframe">{TFS.map((t) => <button key={t} id={`timeframe-${t}`} onKeyDown={e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const index=TFS.indexOf(t),next=e.key==='Home'?0:e.key==='End'?TFS.length-1:(index+(e.key==='ArrowRight'?1:-1)+TFS.length)%TFS.length;setTf(TFS[next]);document.getElementById(`timeframe-${TFS[next]}`)?.focus()}}} className={tf === t ? 'selected' : ''} aria-pressed={tf === t} onClick={() => setTf(t)}>{t}</button>)}</div></div>
+          <div className="panel-head"><h2 id="coin-chart" tabIndex={-1}>Price in HYPE</h2><div className="tf-switch" role="group" aria-label="Timeframe">{TFS.map((t) => <button key={t} id={`timeframe-${t}`} onKeyDown={e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const index=TFS.indexOf(t),next=e.key==='Home'?0:e.key==='End'?TFS.length-1:(index+(e.key==='ArrowRight'?1:-1)+TFS.length)%TFS.length;setTf(TFS[next]);document.getElementById(`timeframe-${TFS[next]}`)?.focus()}}} className={tf === t ? 'selected' : ''} aria-pressed={tf === t} onClick={() => setTf(t)}>{t}</button>)}</div></div>
           <CandleChart bars={bars} />
         </section>
         <dl className="coin-stats panel">
@@ -65,7 +67,7 @@ export function Coin({ address }: { address: string }) {
       <aside className="coin-right">
         <TradePanel launch={l} source={data.source} autoFocus={wantsBuy} />
         <CoinPaperPosition token={l.address}/>
-        <section className="panel"><h2>Safety <SafetyIcon status={l.safety.status} /></h2>
+        <section className="panel"><h2 id="coin-checks" tabIndex={-1}>Safety <SafetyIcon status={l.safety.status} /></h2>
           {!l.safety.checks.length ? <p className="muted small">Not checked yet.</p> : <ul className="checks">{l.safety.checks.map((c) => <li key={c.id} className={c.result}><strong>{c.label}</strong><span>{c.detail}</span></li>)}</ul>}
         </section>
         <section className="panel"><h2>Traction {l.traction && <span className="badge accent">{l.traction.score}/100</span>}</h2>

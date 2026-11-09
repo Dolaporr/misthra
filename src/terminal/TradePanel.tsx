@@ -7,10 +7,11 @@ import {hype,sendWithWallet,type Launch,type Quote} from './model';
 import {confirmInWallet,quoteRoute,runTradeSteps,tradeSteps,type StepProgress} from './trade-flow';
 import './trade-steps.css';
 import {tradeAccess,quoteMatchesSource} from './trade-access';
+import {quickAmountFromHash} from './quick-amount';
 
 export function TradePanel({launch,autoFocus,source}:{launch:Launch;autoFocus:boolean;source:string}){
   const {identity,notify,openWallet}=useApp();
-  const [side,setSide]=useState<'buy'|'sell'>('buy'),[amount,setAmount]=useState('0.5'),[slippage,setSlippage]=useState('1');
+  const [side,setSide]=useState<'buy'|'sell'>('buy'),[amount,setAmount]=useState(()=>quickAmountFromHash(window.location.hash)),[slippage,setSlippage]=useState('1');
   const [quote,setQuote]=useState<Quote|null>(null),[progress,setProgress]=useState<StepProgress[]>([]);
   const [busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null);
   const input=useRef<HTMLInputElement>(null),request=useRef(0);
@@ -50,7 +51,7 @@ export function TradePanel({launch,autoFocus,source}:{launch:Launch;autoFocus:bo
     if(!identity.address){openWallet();return}setBusy(true);setError(null);
     try{const r=await post<{fill:{tokens:number;hype:number}}>('/paper/fill',{token:launch.address,side,amount,slippageBps});notify(`Paper ${side}: ${hype(r.fill.tokens)} ${launch.symbol} for ${hype(r.fill.hype)} HYPE.`);setQuote(null)}catch(e){setError((e as Error).message)}finally{setBusy(false)}
   };
-  return <section className="panel trade-panel" aria-label={`Trade ${launch.symbol}`}>
+  return <section className="panel trade-panel" id="coin-trade" tabIndex={-1} aria-label={`Trade ${launch.symbol}`}>
     <div className="trade-panel-heading"><h2>{access.paper?'Paper trading':access.wallet?'Trade':'Trade on the launchpad'}</h2><SourceBadge source={source}/></div>
     {!access.quote?<div className="trade-unavailable"><Info size={20}/><p>{access.reason}</p>{access.venueUrl&&<a className="button secondary full" href={access.venueUrl} target="_blank" rel="noopener noreferrer">Trade on {launch.pad?.name||'the launchpad'}<ArrowUpRight size={15}/></a>}<p className="muted small">You can still inspect the chart, indexed activity and checks here.</p></div>:<>
     {access.paper&&<p className="trade-paper-note">{access.reason} No real funds are used.</p>}

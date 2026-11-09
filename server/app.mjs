@@ -7,6 +7,7 @@ import { dirname, extname } from 'node:path';
 import { verifyMessage, isAddress } from 'ethers';
 import { z } from 'zod';
 import { setupTerminal } from './terminal/index.mjs';
+import { loadPartners, partnerForOrigin, partnerMayCall } from './terminal/partners.mjs';
 
 const UNIT=10n**18n, HOUR=3600000, DAY=24*HOUR;
 export const DEMO_POSTER='0x1111111111111111111111111111111111111111';
@@ -25,7 +26,7 @@ const bodySchema=z.object({text:txt(30000,0).optional(),link:z.string().max(2048
 const actionSchema=bodySchema.extend({action:z.enum(['claim','submit','accept','reject','revise','cancel','raise','finalize','pick','confirm']),tip:z.string().optional(),amount:z.string().optional(),entryId:z.string().max(100).optional(),note:txt(3000,0).optional()});
 const parse=(schema,body)=>{const result=schema.safeParse(body);if(!result.success)fail(400,result.error.issues.map(i=>`${i.path.join('.')}: ${i.message}`).join('; '));return result.data;};
 
-export function createApp({dbPath='data/errand.sqlite',mode='demo',now=()=>Date.now(),seed=true,elysium,elysiumProvider=null,terminalStart=false,log=()=>{}}={}) {
+export function createApp({dbPath='data/errand.sqlite',mode='demo',now=()=>Date.now(),seed=true,elysium,elysiumProvider=null,terminalStart=false,log=()=>{},partners=loadPartners()}={}) {
   if(!['demo','chain'].includes(mode))throw new Error('Unknown execution mode');
   if(dbPath!==':memory:')mkdirSync(dirname(dbPath),{recursive:true});
   const db=new DatabaseSync(dbPath);db.exec('PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000; CREATE TABLE IF NOT EXISTS state (id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL); CREATE TABLE IF NOT EXISTS uploads (id TEXT PRIMARY KEY, owner TEXT NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, size INTEGER NOT NULL, bytes BLOB NOT NULL)');
@@ -85,7 +86,8 @@ export function createApp({dbPath='data/errand.sqlite',mode='demo',now=()=>Date.
   const origins=new Set([...appOrigins,'http://localhost:5173','http://127.0.0.1:5173','http://localhost:4317','http://127.0.0.1:4317']);
   // A page served by this server is always allowed to call it: same host as the request.
   const sameHost=(origin,host)=>{try{return !!host&&new URL(origin).host===host;}catch{return false;}};
-  app.use((req,res,next)=>{const origin=req.headers.origin;const host=req.headers.host||'';if(origin&&!origins.has(origin)&&!sameHost(origin,host))return res.status(403).json({error:'Origin is not permitted'});if(origin){res.set('Access-Control-Allow-Origin',origin);res.set('Access-Control-Allow-Credentials','true');res.vary('Origin');}res.set('X-Content-Type-Options','nosniff');res.set('Referrer-Policy','same-origin');if(req.method==='OPTIONS'){res.set('Access-Control-Allow-Headers','Content-Type, Authorization');res.set('Access-Control-Allow-Methods','GET, POST, OPTIONS');return res.sendStatus(204);}next();});
+  // Partner sites (chain/partners.json) may call a few public endpoints, without cookies.
+  app.use((req,res,next)=>{const origin=req.headers.origin;const host=req.headers.host||'';if(origin&&!origins.has(origin)&&!sameHost(origin,host)){const partner=partnerForOrigin(partners,origin);if(!partner||!partnerMayCall(req))return res.status(403).json({error:'Origin is not permitted'});res.set('Access-Control-Allow-Origin',origin);res.vary('Origin');res.set('X-Content-Type-Options','nosniff');req.partner=partner;if(req.method==='OPTIONS'){res.set('Access-Control-Allow-Headers','Content-Type');res.set('Access-Control-Allow-Methods','GET, POST, OPTIONS');res.set('Access-Control-Max-Age','600');return res.sendStatus(204);}return next();}if(origin){res.set('Access-Control-Allow-Origin',origin);res.set('Access-Control-Allow-Credentials','true');res.vary('Origin');}res.set('X-Content-Type-Options','nosniff');res.set('Referrer-Policy','same-origin');if(req.method==='OPTIONS'){res.set('Access-Control-Allow-Headers','Content-Type, Authorization');res.set('Access-Control-Allow-Methods','GET, POST, OPTIONS');return res.sendStatus(204);}next();});
   app.use(express.json({limit:'128kb'}));
   const limited=new Map();const limit=(key,max=30)=>{const timestamp=time();let value=limited.get(key);if(!value||timestamp-value.at>60000){value={at:timestamp,count:0};limited.set(key,value);}if(++value.count>max)fail(429,'Too many requests; try again shortly');if(limited.size>5000)limited.clear();};
   const route=(method,path,fn)=>app[method](path,(req,res,next)=>{try{state=read();res.json(fn(req,res));}catch(e){next(e);}});
@@ -139,7 +141,7 @@ export function createApp({dbPath='data/errand.sqlite',mode='demo',now=()=>Date.
       else if(b.length>=16&&b.subarray(0,4).equals(Buffer.from([26,69,223,163]))&&b.includes(Buffer.from('webm'))&&ext==='.webm')type='video/webm';
       if(!type||f.mimetype!==type)fail(400,'Unsupported file or file contents do not match its type');if(type.startsWith('image/')&&b.length>1_500_000)fail(400,'Images must be at most 1.5MB');const key=id(),name=f.originalname.replace(/[^a-zA-Z0-9._ -]/g,'_').slice(0,120);db.prepare('INSERT INTO uploads(id,owner,name,type,size,bytes) VALUES(?,?,?,?,?,?)').run(key,actor,name,type,b.length,b);res.json({url:`/api/uploads/${key}`,name,type,size:b.length});}catch(error){next(error);}});});
   app.get('/api/uploads/:id',(req,res,next)=>{try{const f=db.prepare('SELECT name,type,bytes FROM uploads WHERE id=?').get(req.params.id);if(!f)fail(404,'File not found');res.set('Content-Type',f.type);res.set('Content-Security-Policy',"default-src 'none'");res.set('Content-Disposition',`inline; filename="${f.name.replace(/"/g,'_')}"`);res.send(Buffer.from(f.bytes));}catch(e){next(e);}});
-  const terminal=setupTerminal(app,{db,now,auth:req=>{state=read();return authenticate(req);},config:elysium,provider:elysiumProvider,start:terminalStart,log});app.locals.terminal=terminal;app.use('/api',(req,res)=>res.status(404).json({error:'API route not found'}));
+  const terminal=setupTerminal(app,{db,now,auth:req=>{state=read();return authenticate(req);},config:elysium,provider:elysiumProvider,start:terminalStart,log,partners});app.locals.terminal=terminal;app.use('/api',(req,res)=>res.status(404).json({error:'API route not found'}));
   app.use((error,req,res,next)=>{if(res.headersSent)return next(error);const status=error.status||((error.type==='entity.too.large')?413:500);if(status>=500)console.error(error);res.status(status).json({error:status>=500?'The service could not complete this request':error.message});});
   return app;
 }

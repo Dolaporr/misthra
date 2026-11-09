@@ -125,5 +125,14 @@ The stream sends each `alert` event only to the session that owns the rule.
   Which launchpads can send creator fees to a router. Show `note` and say plainly that the list is from the pads' docs and not yet confirmed on-chain while `checked.onchain` is false.
 - The router accepts creator fees in WHYPE, in native HYPE (`sync(address(0))` wraps what is not already owed), or in the launched token when it trades on the canonical Uniswap v3 deployment.
 
+### Partners (launchpads and aggregators that send creators to Misthra)
+Configured in `chain/partners.json` (`id`, `name`, `url`, `origins`, `returnHosts`). Attribution is a record, not a payout.
+- `GET /api/partners` → `{ partners: { id, name, url, returnHosts }[] }`
+- `POST /api/router/plan` accepts optional `ref` (partner id) and `returnUrl`. Response adds `ref: { id, name } | null` and `returnUrl: string | null`: the return URL is echoed back **only** if it is `https` on one of that partner's `returnHosts`, otherwise null. A plan with a predicted address is attributed to the partner (first plan wins). Unknown `ref` → `400 unknown_partner`.
+- `GET /api/router/:address` adds `referredBy: { id, name } | null`.
+- `GET /api/partners/:id/routers` → `{ source, partner, planned, deployed: number | null, routers: { router, creator, plannedAt, deployed: boolean | null }[] }` (`deployed` is null in simulated mode).
+- **Cross-origin calls:** a partner's own site (its `origins`) may call, without cookies: `GET /api/capabilities`, `/api/launches…`, `/api/partners…`, `/api/router/pads`, `/api/router/:address`, and `POST /api/router/plan`, `/api/router/:address/prepare` (pass `from` explicitly). A call from the partner origin is attributed automatically. Everything else (sessions, alerts, quotes, paper) is `403` from other origins.
+- **Deep link** (frontend): `https://misthra.com/#/launch?ref=<id>&creator=<0x…>&pad=<padId>&returnUrl=<https url>`. See `docs/partners.md`.
+
 ### Existing (Agents section, unchanged)
 Missions, agents, inbox, account: see `docs/api-contract.md`.

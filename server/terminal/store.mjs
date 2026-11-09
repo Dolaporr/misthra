@@ -39,6 +39,7 @@ export function createTerminalStore(db, { now = () => Date.now() } = {}) {
     CREATE TABLE IF NOT EXISTS t_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS t_alert_rules (id TEXT PRIMARY KEY, owner TEXT NOT NULL, rule TEXT NOT NULL, created_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS t_alert_events (id TEXT PRIMARY KEY, rule_id TEXT NOT NULL, owner TEXT NOT NULL, at INTEGER NOT NULL, title TEXT NOT NULL, detail TEXT NOT NULL, token TEXT, dedupe TEXT UNIQUE);
+    CREATE TABLE IF NOT EXISTS t_router_refs (router TEXT PRIMARY KEY, partner TEXT NOT NULL, creator TEXT NOT NULL, planned_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS t_paper (id TEXT PRIMARY KEY, owner TEXT NOT NULL, token TEXT NOT NULL, side TEXT NOT NULL, hype REAL NOT NULL, tokens REAL NOT NULL, price REAL NOT NULL, at INTEGER NOT NULL);
   `);
   const q = {
@@ -51,6 +52,9 @@ export function createTerminalStore(db, { now = () => Date.now() } = {}) {
     priceAt: db.prepare('SELECT price FROM t_trades WHERE token=? AND t<=? ORDER BY t DESC, id DESC LIMIT 1'),
     firstPrice: db.prepare('SELECT price FROM t_trades WHERE token=? ORDER BY t ASC, id ASC LIMIT 1'),
     trades: db.prepare('SELECT tx, t, side, trader, hype, tokens FROM t_trades WHERE token=? ORDER BY t DESC, id DESC LIMIT ?'),
+    putRef: db.prepare('INSERT OR IGNORE INTO t_router_refs (router, partner, creator, planned_at) VALUES (?, ?, ?, ?)'),
+    refOf: db.prepare('SELECT partner, planned_at FROM t_router_refs WHERE router = ?'),
+    refsOf: db.prepare('SELECT router, creator, planned_at FROM t_router_refs WHERE partner = ? ORDER BY planned_at DESC LIMIT ?'),
     netHype: db.prepare("SELECT COALESCE(SUM(CASE WHEN side='buy' THEN hype ELSE -hype END),0) AS net FROM t_trades WHERE token=?"),
     tradesSince: db.prepare('SELECT t, price, hype FROM t_trades WHERE token=? AND t>=? ORDER BY t ASC, id ASC'),
     prune: db.prepare('DELETE FROM t_trades WHERE t<?'),
@@ -76,6 +80,11 @@ export function createTerminalStore(db, { now = () => Date.now() } = {}) {
     setMeta: (key, value) => q.setMeta.run(key, String(value)),
     getRaw: (address) => parse(q.getLaunch.get(address.toLowerCase())),
     allRaw: () => q.allLaunches.all().map(parse),
+    // Partner attribution for router plans. First plan wins: a predicted address is
+    // attributed to the partner whose page planned it first.
+    addRef: (router, partner, creator, at) => q.putRef.run(router.toLowerCase(), partner, creator.toLowerCase(), at),
+    refOf: (router) => q.refOf.get(router.toLowerCase()) ?? null,
+    refsOf: (partner, limit = 200) => q.refsOf.all(partner, limit),
     // HYPE paid in by buyers minus HYPE taken out by sellers, over every recorded trade.
     netHype: (address) => Math.max(0, Number(q.netHype.get(address.toLowerCase()).net)),
     putLaunch(data, source) {

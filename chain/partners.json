@@ -1,0 +1,9 @@
+[
+  {
+    "id": "agora",
+    "name": "Agora",
+    "url": "https://agoradex.app",
+    "origins": ["https://agoradex.app", "https://www.agoradex.app"],
+    "returnHosts": ["agoradex.app", "www.agoradex.app"]
+  }
+]

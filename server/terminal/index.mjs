@@ -10,10 +10,10 @@ import { mountTerminal } from './routes.mjs';
 
 const FIXTURE = fileURLToPath(new URL('../../fixtures/launches.sample.json', import.meta.url));
 
-export function setupTerminal(app, { db, auth, now = () => Date.now(), config = loadElysiumConfig({}), provider = null, start = false, log = () => {} }) {
+export function setupTerminal(app, { db, auth, now = () => Date.now(), config = loadElysiumConfig({}), provider = null, start = false, log = () => {}, partners = [] }) {
   const store = createTerminalStore(db, { now });
   const rpc = provider ?? (config.live ? new JsonRpcProvider(config.rpcUrl, config.chainId, { staticNetwork: true }) : null);
-  const routes = mountTerminal(app, { store, config, provider: rpc, auth, now });
+  const routes = mountTerminal(app, { store, config, provider: rpc, auth, now, partners });
   const hooks = { onLaunch: routes.onLaunch, onTrade: routes.onTrade };
   const source = config.live ? createIndexer(store, rpc, config, { ...hooks, log }) : createSimFeed(store, { fixturePath: FIXTURE, now, ...hooks });
   if (!config.live) source.seedFromFixture();

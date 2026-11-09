@@ -234,3 +234,44 @@ test('the stream numbers events and replays what a reconnecting client missed', 
   assert.deepEqual(ids, [...ids].sort((a, b) => a - b), 'in order');
   assert.ok(ids.every((id) => id > before));
 });
+
+test('a partner site can read and plan routers from its own origin, but nothing else', async (t) => {
+  const f = await terminal(t);
+  const AGORA = 'https://agoradex.app';
+  const call = (path, { method = 'GET', origin = AGORA, body, headers = {} } = {}) => fetch(f.origin + path, { method, headers: { Origin: origin, ...(body ? { 'Content-Type': 'application/json' } : {}), ...headers }, body: body ? JSON.stringify(body) : undefined });
+  // Allowed: public reads, with CORS for that origin and no credentials.
+  const caps = await call('/api/capabilities');
+  assert.equal(caps.status, 200);
+  assert.equal(caps.headers.get('access-control-allow-origin'), AGORA);
+  assert.equal(caps.headers.get('access-control-allow-credentials'), null, 'partners never get cookies');
+  assert.equal((await call('/api/launches?limit=1')).status, 200);
+  assert.equal((await call('/api/router/pads')).status, 200);
+  // Preflight for the plan endpoint.
+  const pre = await call('/api/router/plan', { method: 'OPTIONS', headers: { 'Access-Control-Request-Method': 'POST', 'Access-Control-Request-Headers': 'content-type' } });
+  assert.equal(pre.status, 204);
+  // Plan from the partner's page: attributed to it, return URL kept only on its hosts.
+  const creator = '0x1111111111111111111111111111111111111111';
+  const body = { creator, buckets: [{ kind: 'native', bps: 10000, wallets: [{ address: creator, bps: 10000 }] }] };
+  const plan = await (await call('/api/router/plan', { method: 'POST', body: { ...body, returnUrl: 'https://agoradex.app/launch/abc' } })).json();
+  assert.deepEqual(plan.ref, { id: 'agora', name: 'Agora' });
+  assert.equal(plan.returnUrl, 'https://agoradex.app/launch/abc');
+  const evil = await (await call('/api/router/plan', { method: 'POST', body: { ...body, returnUrl: 'https://agoradex.app.evil.example/x' } })).json();
+  assert.equal(evil.returnUrl, null, 'look-alike hosts are not followed');
+  assert.equal((await (await call('/api/router/plan', { method: 'POST', body: { ...body, returnUrl: 'http://agoradex.app/x' } })).json()).returnUrl, null, 'https only');
+  // Refused: sessions, alerts, paper desk, trade quotes, and unknown origins.
+  assert.equal((await call('/api/alerts')).status, 403);
+  assert.equal((await call('/api/auth/demo', { method: 'POST', body: { role: 'poster' } })).status, 403);
+  assert.equal((await call('/api/trade/quote', { method: 'POST', body: {} })).status, 403);
+  assert.equal((await call('/api/capabilities', { origin: 'https://evil.example' })).status, 403);
+  // From misthra itself, ?ref=agora works the same; an unknown ref is refused.
+  assert.deepEqual((await f.req('/api/router/plan', { ...body, ref: 'agora' })).body.ref, { id: 'agora', name: 'Agora' });
+  assert.equal((await f.req('/api/router/plan', { ...body, ref: 'nobody' })).status, 400);
+  // Partner list and attribution records.
+  const list = (await f.req('/api/partners')).body.partners;
+  assert.deepEqual(list.map((p) => p.id), ['agora']);
+  f.app.locals.terminal.store.addRef('0x' + 'ab'.repeat(20), 'agora', creator, f.now());
+  const routers = (await f.req('/api/partners/agora/routers')).body;
+  assert.equal(routers.planned, 1);
+  assert.equal(routers.routers[0].router, '0x' + 'ab'.repeat(20));
+  assert.equal(routers.deployed, null, 'simulated: deployment unknown, not zero');
+});

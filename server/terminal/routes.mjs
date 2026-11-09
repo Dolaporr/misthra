@@ -6,6 +6,7 @@ import { liveQuote, simulatedQuote } from '../../chain/trade.mjs';
 import { planRouter } from '../../chain/router-plan.mjs';
 import { PAD_SUPPORT, PAD_SUPPORT_CHECKED, usable } from './pad-support.mjs';
 import { capabilities } from './capabilities.mjs';
+import { safeReturnUrl } from './partners.mjs';
 import { readRouterSnapshot, RouterReadError } from '../../chain/router-reads.mjs';
 import { prepareRouterAction } from '../../chain/router-actions.mjs';
 import { readFileSync } from 'node:fs';
@@ -14,7 +15,7 @@ import { Interface, formatUnits } from 'ethers';
 
 const STAGES = ['new', 'stretch', 'migrated'];
 
-export function mountTerminal(app, { store, config, provider = null, auth, now = () => Date.now() }) {
+export function mountTerminal(app, { store, config, provider = null, auth, now = () => Date.now(), partners = [] }) {
   const r = express.Router();
   const source = () => (config.live ? 'live' : 'simulated');
   const clients = new Map(); // response -> wallet address or null
@@ -142,7 +143,24 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
   }));
   r.delete('/alerts/:id', json((req) => { const owner = need(req); if (!store.deleteRule(owner, req.params.id)) fail(404, 'No such alert.'); return { ok: true }; }));
 
-  r.post('/router/plan', express.json(), json(async (req) => planRouter(provider, config, req.body ?? {})));
+  // `ref` (or the calling partner's origin) attributes the planned router to a partner.
+  const partnerById = (id) => partners.find((p) => p.id === id) ?? null;
+  r.post('/router/plan', express.json(), json(async (req) => {
+    const ref = req.partner?.id ?? (typeof req.body?.ref === 'string' ? req.body.ref : null);
+    const partner = ref ? partnerById(ref) : null;
+    if (ref && !partner) fail(400, `Unknown partner "${String(ref).slice(0, 32)}".`, 'unknown_partner');
+    const plan = await planRouter(provider, config, req.body ?? {});
+    if (partner && plan.predictedAddress) store.addRef(plan.predictedAddress, partner.id, plan.deployTx.from, now());
+    return { ...plan, ref: partner ? { id: partner.id, name: partner.name } : null, returnUrl: safeReturnUrl(partner, req.body?.returnUrl) };
+  }));
+  // Public partner list: names and the hosts a creator may be sent back to.
+  r.get('/partners', json(() => ({ partners: partners.map(({ id, name, url, returnHosts }) => ({ id, name, url, returnHosts })) })));
+  r.get('/partners/:id/routers', json((req) => {
+    const partner = partnerById(req.params.id) ?? fail(404, 'Unknown partner.');
+    const deployed = new Set(JSON.parse(store.meta('idx.routers') ?? '[]'));
+    const routers = store.refsOf(partner.id).map((x) => ({ router: x.router, creator: x.creator, plannedAt: x.planned_at, deployed: config.live ? deployed.has(x.router) : null }));
+    return { source: source(), partner: { id: partner.id, name: partner.name }, planned: routers.length, deployed: config.live ? routers.filter((x) => x.deployed).length : null, routers };
+  }));
   r.get('/router/pads', json(() => ({ checked: PAD_SUPPORT_CHECKED, pads: PAD_SUPPORT.map((p) => ({ ...p, usable: usable(p) })) })));
   // Router status from confirmed chain state. The simulated preview serves one
   // labelled sample router so screens can be built before anything is deployed.
@@ -154,7 +172,7 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
       if (req.params.address.toLowerCase() === sampleRouter.router) return sampleRouter;
       fail(503, 'Router status needs a live Elysium connection. This preview only has the sample router.');
     }
-    try { return await readRouterSnapshot(provider, config, req.params.address); } catch (e) { return routerError(e); }
+    try { const snap = await readRouterSnapshot(provider, config, req.params.address); const ref = store.refOf(req.params.address); return { ...snap, referredBy: ref ? { id: ref.partner, name: partnerById(ref.partner)?.name ?? ref.partner } : null }; } catch (e) { return routerError(e); }
   }));
   r.post('/router/:address/prepare', express.json(), json(async (req) => {
     if (!isAddress(req.params.address)) fail(400, 'A valid router address is required.');

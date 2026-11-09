@@ -204,4 +204,14 @@ test('indexer reads v4 pools created by a known pad hook, and ignores unknown ho
   assert.equal(raw.liquidityHype ?? store.getRaw(T).liquidityHype, 6);
   const view = store.toApi(store.getRaw(T), config);
   assert.equal(view.pad.name, 'Volta'); assert.match(view.trade.reason, /Trade it on Volta/);
+  // A pad listed later: its earlier pool is caught up once; Volta's trades are not counted again.
+  await indexer.step();
+  const S = (await stray.getAddress()).toLowerCase();
+  assert.equal(store.getRaw(S), null);
+  const config2 = { ...config, pads: [...config.pads, { id: 'strays', name: 'Strays', url: null, contracts: [], v4Hooks: [OTHER_HOOK] }] };
+  const later = createIndexer(store, provider, config2, {});
+  assert.equal(await later.backfillNewHooks(), 1);
+  assert.equal(store.getRaw(S).padId, 'strays');
+  assert.equal(store.trades(T, 10).length, 1, 'no duplicate trades for already-indexed pools');
+  assert.equal(await later.backfillNewHooks(), 0, 'runs once per hook set');
 });

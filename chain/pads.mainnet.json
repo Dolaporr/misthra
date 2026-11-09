@@ -5,12 +5,12 @@
     "url": "https://montramarkets.xyz",
     "locksLiquidity": true,
     "contracts": [
-      "0x38D3ef3A06D18fA3286Fb5dEAfe611be725fcD15",
-      "0x6b1216A40B65c83e9c9e18a562C446697B8cf8EC",
-      "0xc6E9a8E1a99023B67067B8A3605403b8d7B3A157"
+      "0x38d3ef3a06d18fa3286fb5deafe611be725fcd15",
+      "0x6b1216a40b65c83e9c9e18a562c446697b8cf8ec",
+      "0xc6e9a8e1a99023b67067b8a3605403b8d7b3a157"
     ],
     "v4Hooks": [
-      "0x6b1216A40B65c83e9c9e18a562C446697B8cf8EC"
+      "0x6b1216a40b65c83e9c9e18a562c446697b8cf8ec"
     ]
   },
   {
@@ -25,7 +25,7 @@
     "url": null,
     "contracts": [],
     "v4Hooks": [
-      "0xBacF71bf02b8cFe171853C5eC4A060ba2AC1E0Cc"
+      "0xbacf71bf02b8cfe171853c5ec4a060ba2ac1e0cc"
     ]
   },
   {
@@ -68,7 +68,7 @@
     "url": null,
     "contracts": [],
     "v4Hooks": [
-      "0xe0DEF4221B9840a610d4E7d55812a79A6431a8EC"
+      "0xe0def4221b9840a610d4e7d55812a79a6431a8ec"
     ]
   },
   {
@@ -77,7 +77,7 @@
     "url": null,
     "contracts": [],
     "v4Hooks": [
-      "0x3aB88DDC3cF2A012AF88b60828edb4553697E5dc"
+      "0x3ab88ddc3cf2a012af88b60828edb4553697e5dc"
     ]
   }
 ]

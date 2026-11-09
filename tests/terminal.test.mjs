@@ -320,3 +320,20 @@ test('the wallet network follows the live Elysium chain and never exposes the se
   assert.ok(!JSON.stringify(main).includes('SECRET'), 'the server RPC (may hold a key) is never sent to browsers');
   assert.equal(walletNetwork({ live: true, chainId: 99901 }, { ELYSIUM_PUBLIC_RPC_URL: 'https://rpc.misthra.com' }).rpcUrl, 'https://rpc.misthra.com');
 });
+
+test('the mainnet pads file loads every hook and contract (no address silently dropped)', async () => {
+  const { loadPads } = await import('../chain/elysium.mjs');
+  const { readFileSync, writeFileSync, mkdtempSync } = await import('node:fs');
+  const file = new URL('../chain/pads.mainnet.json', import.meta.url);
+  const raw = JSON.parse(readFileSync(file, 'utf8'));
+  const pads = loadPads(file);
+  for (const p of raw) {
+    const loaded = pads.find((x) => x.id === p.id);
+    assert.equal(loaded.v4Hooks.length, (p.v4Hooks ?? []).length, `${p.id} hooks`);
+    assert.equal(loaded.contracts.length, (p.contracts ?? []).length, `${p.id} contracts`);
+  }
+  for (const id of ['montra', 'ascend', 'volta', 'elyspump']) assert.equal(pads.find((x) => x.id === id).v4Hooks.length, 1, id);
+  const bad = join(mkdtempSync(join(tmpdir(), 'pads-')), 'p.json');
+  writeFileSync(bad, JSON.stringify([{ id: 'x', name: 'X', v4Hooks: ['0x123'] }]));
+  assert.throws(() => loadPads(bad), /invalid address 0x123 in x\.v4Hooks/);
+});

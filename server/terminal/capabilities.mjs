@@ -22,7 +22,7 @@ export function capabilities(config, { agoraOn = false, usd = null } = {}) {
     },
     {
       id: 'uniswap-v4', name: 'Uniswap v4', version: 4,
-      indexed: live && Boolean(config.montra), indexedPads: config.montra ? ['montra'] : [],
+      indexed: live && Boolean(config.montra || config.v4PoolManager), indexedPads: live ? [...new Set([...(config.montra ? ['montra'] : []), ...(config.v4PoolManager ? config.pads.filter((p) => p.v4Hooks?.length).map((p) => p.id) : [])])] : [],
       trade: false, reason: 'Misthra cannot route Uniswap v4 trades yet. Each coin links to its launchpad.',
       fee: null,
     },
@@ -34,6 +34,8 @@ export function capabilities(config, { agoraOn = false, usd = null } = {}) {
     },
   ];
   return {
+    // Deployed commit (Railway sets RAILWAY_GIT_COMMIT_SHA), so anyone can see which build is live.
+    build: (process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || '').slice(0, 7) || null,
     source: live ? 'live' : 'simulated',
     chainId: live ? config.chainId : null,
     networkVerified: live ? Boolean(config.networkVerified) : null,

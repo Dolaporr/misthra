@@ -16,9 +16,9 @@ export function usdUnavailable(rate:UsdRate|null|undefined,expiresAt:number|null
  return null;
 }
 // Format the API's dollars directly; never reinterpret HYPE or fix a conversion rate.
-export function usdMarketCap(value:string|null|undefined):string{
+export function usdMarketCap(value:string|null|undefined,rounded=false):string{
  if(typeof value!=='string'||!/^\d+(\.\d+)?$/.test(value)||!Number.isFinite(Number(value)))return '—';
  const amount=Number(value);
  if(amount>0&&amount<1)return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumSignificantDigits:3}).format(amount);
- return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',notation:amount>=1000?'compact':'standard',...(amount>=1000?{minimumFractionDigits:0}:{}),maximumFractionDigits:2}).format(amount);
+ return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',notation:amount>=1000?'compact':'standard',...(amount>=1000?{minimumFractionDigits:0}:{}),maximumFractionDigits:rounded&&amount>=1000?0:2}).format(amount);
 }

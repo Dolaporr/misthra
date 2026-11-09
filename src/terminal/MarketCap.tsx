@@ -1,6 +1,8 @@
 import {createContext,useContext,useEffect,useState,type ReactNode} from 'react';
 import {usdMarketCap,usdUnavailable,usdExpiresAt,type UsdRate} from './market-display';
 import {apiReceipt} from '../api';
+import {useTerminalDisplay} from './TerminalDisplay';
+import {capColor} from './display-preferences';
 const Pricing=createContext<{rate:UsdRate|null|undefined;expiresAt:number|null;now:number}>({rate:null,expiresAt:null,now:0});
 export function UsdProvider({snapshot,children}:{snapshot:{usd:UsdRate;updatedAt?:number}|null;children:ReactNode}){
  const usd=snapshot?.usd,receipt=snapshot?apiReceipt(snapshot):undefined;
@@ -18,7 +20,8 @@ export function UsdProvider({snapshot,children}:{snapshot:{usd:UsdRate;updatedAt
  return <Pricing.Provider value={{rate:usd,expiresAt,now:Math.max(now,performance.now())}}>{children}</Pricing.Provider>;
 }
 export function MarketCap({value}:{value:string|null|undefined}){
+ const {display}=useTerminalDisplay();
  const {rate,expiresAt,now}=useContext(Pricing),reason=usdUnavailable(rate,expiresAt,now);
- const text=reason?'—':usdMarketCap(value),simulated=!reason&&text!=='—'&&rate?.source==='simulated';
- return <span className="market-cap-value" title={reason|| (text==='—'?'No trade price for this token yet.':rate?.source)} aria-label={text==='—'?(reason||'No trade price for this token yet.'):`${text}${simulated?' simulated':''}`}>{text}{simulated&&<small className="market-cap-sim" aria-hidden="true">sim</small>}</span>;
+ const text=reason?'—':usdMarketCap(value,display.roundCaps),simulated=!reason&&text!=='—'&&rate?.source==='simulated';
+ return <span className="market-cap-value" style={{color:reason?undefined:capColor(value,display)}} title={reason|| (text==='—'?'No trade price for this token yet.':rate?.source)} aria-label={text==='—'?(reason||'No trade price for this token yet.'):`${text}${simulated?' simulated':''}`}>{text}{simulated&&<small className="market-cap-sim" aria-hidden="true">sim</small>}</span>;
 }

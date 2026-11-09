@@ -37,3 +37,11 @@ test('ipfs and arweave links are turned into https', () => {
   assert.equal(normaliseImage('ar://' + 'a'.repeat(43)), 'https://arweave.net/' + 'a'.repeat(43));
   assert.equal(normaliseImage('  https://cdn.example.com/x.webp  '), 'https://cdn.example.com/x.webp');
 });
+
+test('JSON metadata in the launch call (ElysPump style) yields its image', () => {
+  const json = JSON.stringify({ description: 'x', image: 'https://gateway.pinata.cloud/ipfs/bafkreih2pq2qqznbmn6ki5dyv5zoo2cgbullhq56jbhw7at3gixxw5j57e', website: 'https://example.com' });
+  const data = call(['string', 'string', 'string'], ['Luis Trading Mentor', 'LUIS', json]);
+  assert.equal(imageFromCalldata(data, { name: 'Luis Trading Mentor', symbol: 'LUIS' }), 'https://gateway.pinata.cloud/ipfs/bafkreih2pq2qqznbmn6ki5dyv5zoo2cgbullhq56jbhw7at3gixxw5j57e');
+  assert.equal(imageFromCalldata(call(['string', 'string', 'string'], ['A', 'A', '{"image":"javascript:alert(1)"}']), { name: 'A', symbol: 'A' }), null);
+  assert.equal(imageFromCalldata(call(['string', 'string', 'string'], ['A', 'A', '{not json']), { name: 'A', symbol: 'A' }), null);
+});

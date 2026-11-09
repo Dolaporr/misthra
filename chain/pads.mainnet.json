@@ -1,12 +1,83 @@
 [
-  { "id": "montra", "name": "Montra", "url": "https://montramarkets.xyz", "locksLiquidity": true,
-    "contracts": ["0x38D3ef3A06D18fA3286Fb5dEAfe611be725fcD15", "0x6b1216A40B65c83e9c9e18a562C446697B8cf8EC", "0xc6E9a8E1a99023B67067B8A3605403b8d7B3A157"] },
-  { "id": "boxa", "name": "BOXA", "url": "https://boxa.club", "contracts": [] },
-  { "id": "elyspump", "name": "ElysPump", "url": null, "contracts": [] },
-  { "id": "kleos", "name": "Kleos", "url": null, "contracts": [] },
-  { "id": "supercolony", "name": "Supercolony", "url": null, "locksLiquidity": true, "contracts": [] },
-  { "id": "citadel", "name": "Citadel", "url": null, "locksLiquidity": true, "contracts": [] },
-  { "id": "arkhampad", "name": "ArkhamPad", "url": null, "locksLiquidity": true, "contracts": [] },
-  { "id": "bunnypad", "name": "BunnyPad", "url": null, "locksLiquidity": true, "contracts": [] },
-  { "id": "ascend", "name": "Ascend", "url": null, "contracts": [] }
+  {
+    "id": "montra",
+    "name": "Montra",
+    "url": "https://montramarkets.xyz",
+    "locksLiquidity": true,
+    "contracts": [
+      "0x38D3ef3A06D18fA3286Fb5dEAfe611be725fcD15",
+      "0x6b1216A40B65c83e9c9e18a562C446697B8cf8EC",
+      "0xc6E9a8E1a99023B67067B8A3605403b8d7B3A157"
+    ],
+    "v4Hooks": [
+      "0x6b1216A40B65c83e9c9e18a562C446697B8cf8EC"
+    ]
+  },
+  {
+    "id": "boxa",
+    "name": "BOXA",
+    "url": "https://boxa.club",
+    "contracts": []
+  },
+  {
+    "id": "elyspump",
+    "name": "ElysPump",
+    "url": null,
+    "contracts": [],
+    "v4Hooks": [
+      "0xBacF71bf02b8cFe171853C5eC4A060ba2AC1E0Cc"
+    ]
+  },
+  {
+    "id": "kleos",
+    "name": "Kleos",
+    "url": null,
+    "contracts": []
+  },
+  {
+    "id": "supercolony",
+    "name": "Supercolony",
+    "url": null,
+    "locksLiquidity": true,
+    "contracts": []
+  },
+  {
+    "id": "citadel",
+    "name": "Citadel",
+    "url": null,
+    "locksLiquidity": true,
+    "contracts": []
+  },
+  {
+    "id": "arkhampad",
+    "name": "ArkhamPad",
+    "url": null,
+    "locksLiquidity": true,
+    "contracts": []
+  },
+  {
+    "id": "bunnypad",
+    "name": "BunnyPad",
+    "url": null,
+    "locksLiquidity": true,
+    "contracts": []
+  },
+  {
+    "id": "ascend",
+    "name": "Ascend",
+    "url": null,
+    "contracts": [],
+    "v4Hooks": [
+      "0xe0DEF4221B9840a610d4E7d55812a79A6431a8EC"
+    ]
+  },
+  {
+    "id": "volta",
+    "name": "Volta",
+    "url": null,
+    "contracts": [],
+    "v4Hooks": [
+      "0x3aB88DDC3cF2A012AF88b60828edb4553697E5dc"
+    ]
+  }
 ]

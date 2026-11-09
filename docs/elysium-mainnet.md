@@ -21,12 +21,14 @@ Status: **community-verified, not yet official.** Kinetiq's docs list only testn
 | Pad | Model | Contracts known | Misthra status |
 |---|---|---|---|
 | Montra | Direct into Uniswap **v4** pool (hook) | Factory `0x38D3ef3A06D18fA3286Fb5dEAfe611be725fcD15` (`TokenLaunched`), hook `0x6b1216A40B65c83e9c9e18a562C446697B8cf8EC`, router `0xc6E9a8E1a99023B67067B8A3605403b8d7B3A157`, registry `0xF1E2FA75422F889e565F3142bdbf60B28dce2aa7` | Indexed via `TokenLaunched` + v4 `Swap` (see indexer/montra.mjs). Docs say fee routes can be any address, contracts included. |
-| Boxa | v4-style pools | Partial addresses only | Needs launcher + event from the team |
-| ElysPump | Uniswap v4 | Partial addresses only | Needs launcher from the team |
+| Ascend | Uniswap **v4** (official PoolManager), WHYPE pairs | Hook `0xe0DEF4221B9840a610d4E7d55812a79A6431a8EC` (launcher `0x63f6a8A8d0257c0363251a50cdE8A8b1046e4d19`) | Indexed by hook (Initialize). ~158 pools/1.4 h on 2026-11-09. Pools without a hook from `0x1d1c51b9…e518` (multicall) are not attributed. |
+| Volta | Uniswap **v4** | Hook/launcher `0x3aB88DDC3cF2A012AF88b60828edb4553697E5dc` | Indexed by hook. ~67 pools/1.4 h. |
+| ElysPump | Uniswap **v4** | Hook/launcher `0xBacF71bf02b8cFe171853C5eC4A060ba2AC1E0Cc` | Indexed by hook. ~26 pools/1.4 h. JSON metadata in calldata. |
+| Unlabelled "flux" launcher | Uniswap v4 | Hook `0x0fa71294c909b11a0b805df4763ba576c69c2acc`, launcher `0x1c24b6d08220c9584df1e3d8a15ad7b0d9bc2e6a` | Not indexed (pad unknown; Agora labels it "other"). ~61 pools/1.4 h. |
+| Boxa | v4-style pools (own pool manager per research) | Partial addresses only | Not seen on the official PoolManager; needs launcher + event from the team |
 | Kleos | Bonding curve → Uniswap v3 | Several launchers | Graduated coins appear via v3 `PoolCreated`; curve phase needs events |
 | Supercolony, Citadel, ArkhamPad, BunnyPad | Direct, locked Uniswap v3 | — | Appear via v3 `PoolCreated` (shown as "Pad not detected" until the launcher address is added) |
 | Volta, PerpMe, Eleos, Elyxa, Mesa | Mixed / v4 | — | Ask the teams |
-| Ascend | Curve → Pancake Infinity (USDC pairs) | — | Not indexed; trade via Agora |
 
 Agora (aggregator) router: `0xAf8dEc958Df2bd664AA661716a8de5Fe0417A295` (0.75% fee). Not yet allow-listed in Misthra; confirm with Agora's docs before setting `AGORA_ALLOWED_TARGETS`.
 
@@ -42,3 +44,5 @@ Checked on-chain after deploy: code present on 99901; gateway `feeBps()` = 75, `
 | MisthraV3SwapAdapter | `0x0c288F86cB06DbD1f85578f9fFf1D7e1F05eAC7d` |
 | MisthraSharedV3TwapPriceGuard | `0x3DDD50BebCe1ff866055A0D7F2F82433b24C7DE1` |
 | Fee recipient (treasury) | `0xC43eB4113BFb7267D54e1592743f24f53a774128` |
+
+Pad attribution of hooks was checked on 2026-11-09 against Agora's public token API (`launchpad` field) for one token per hook, and pool counts are from PoolManager `Initialize` logs over ~50,000 blocks. Uniswap v3 saw 1 new pool in the same window.

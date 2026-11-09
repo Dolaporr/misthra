@@ -39,6 +39,9 @@ export function loadElysiumConfig(env = process.env) {
     ipfsGateway: (env.IPFS_GATEWAY || 'https://gateway.pinata.cloud').replace(/\/+$/, ''),
     ipfsGateways: (env.IPFS_GATEWAYS || '').split(',').map((g) => g.trim().replace(/\/+$/, '')).filter((g) => /^https:\/\//.test(g)),
     // Montra (Uniswap v4): set both to index its launches; the hook is excluded from holders.
+    // Uniswap v4 PoolManager: pools whose hook belongs to a pad (pads file `v4Hooks`) are
+    // indexed from their Initialize event. Montra is read from its own factory event instead.
+    v4PoolManager: addr(env.ELYSIUM_UNISWAP_V4_POOL_MANAGER),
     montra: addr(env.ELYSIUM_MONTRA_FACTORY) && addr(env.ELYSIUM_UNISWAP_V4_POOL_MANAGER)
       ? { factory: addr(env.ELYSIUM_MONTRA_FACTORY), poolManager: addr(env.ELYSIUM_UNISWAP_V4_POOL_MANAGER), hook: addr(env.ELYSIUM_MONTRA_HOOK) }
       : null,
@@ -58,7 +61,7 @@ export function loadElysiumConfig(env = process.env) {
 export function loadPads(file) {
   if (!file) return [];
   const list = JSON.parse(readFileSync(file, 'utf8'));
-  return list.map((p) => ({ id: String(p.id), name: String(p.name), url: p.url || null, locksLiquidity: p.locksLiquidity === true, contracts: (p.contracts || []).map(addr).filter(Boolean) }));
+  return list.map((p) => ({ id: String(p.id), name: String(p.name), url: p.url || null, locksLiquidity: p.locksLiquidity === true, contracts: (p.contracts || []).map(addr).filter(Boolean), v4Hooks: (p.v4Hooks || []).map(addr).filter(Boolean) }));
 }
 
 export function explorerLink(config, kind, address) {

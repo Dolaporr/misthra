@@ -310,3 +310,13 @@ test('live mode: stale or missing HYPE/USD means mcapUsd null and usdPrices unav
   assert.equal(caps.usdPrices.available, false);
   assert.match(caps.usdPrices.reason, /stale/);
 });
+
+test('the wallet network follows the live Elysium chain and never exposes the server RPC', async () => {
+  const { walletNetwork } = await import('../server/app.mjs');
+  assert.equal(walletNetwork(undefined).chainId, 99801, 'preview: testnet');
+  assert.equal(walletNetwork({ live: false, chainId: 99901 }).chainId, 99801);
+  const main = walletNetwork({ live: true, chainId: 99901, rpcUrl: 'https://elysium.g.alchemy.com/v2/SECRET', explorer: null }, {});
+  assert.deepEqual(main, { name: 'Elysium', chainId: 99901, rpcUrl: 'https://rpc.agoradex.app', explorerUrl: null, currency: 'HYPE' });
+  assert.ok(!JSON.stringify(main).includes('SECRET'), 'the server RPC (may hold a key) is never sent to browsers');
+  assert.equal(walletNetwork({ live: true, chainId: 99901 }, { ELYSIUM_PUBLIC_RPC_URL: 'https://rpc.misthra.com' }).rpcUrl, 'https://rpc.misthra.com');
+});

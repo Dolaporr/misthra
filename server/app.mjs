@@ -26,6 +26,17 @@ const bodySchema=z.object({text:txt(30000,0).optional(),link:z.string().max(2048
 const actionSchema=bodySchema.extend({action:z.enum(['claim','submit','accept','reject','revise','cancel','raise','finalize','pick','confirm']),tip:z.string().optional(),amount:z.string().optional(),entryId:z.string().max(100).optional(),note:txt(3000,0).optional()});
 const parse=(schema,body)=>{const result=schema.safeParse(body);if(!result.success)fail(400,result.error.issues.map(i=>`${i.path.join('.')}: ${i.message}`).join('; '));return result.data;};
 
+// The network the browser wallet must be on. Live: the Elysium network Misthra's
+// contracts and indexer use (ELYSIUM_CHAIN_ID). The RPC given to wallets is a public one
+// (ELYSIUM_PUBLIC_RPC_URL), never the server's own ELYSIUM_RPC_URL, which may hold a key.
+const TESTNET={name:'Elysium Testnet',chainId:99801,rpcUrl:'https://testnet-rpc.elysium.kinetiq.xyz',explorerUrl:'https://testnet-explorer.elysium.kinetiq.xyz',currency:'HYPE'};
+export function walletNetwork(elysium,env=process.env){
+  if(!elysium?.live||!elysium.chainId)return TESTNET;
+  const mainnet=elysium.chainId===99901;
+  const rpcUrl=env.ELYSIUM_PUBLIC_RPC_URL||(mainnet?'https://rpc.agoradex.app':elysium.chainId===99801?TESTNET.rpcUrl:null);
+  return {name:mainnet?'Elysium':elysium.chainId===99801?'Elysium Testnet':`Elysium (${elysium.chainId})`,chainId:elysium.chainId,rpcUrl,explorerUrl:elysium.explorer??null,currency:'HYPE'};
+}
+
 export function createApp({dbPath='data/errand.sqlite',mode='demo',now=()=>Date.now(),seed=true,elysium,elysiumProvider=null,terminalStart=false,log=()=>{},partners=loadPartners()}={}) {
   if(!['demo','chain'].includes(mode))throw new Error('Unknown execution mode');
   if(dbPath!==':memory:')mkdirSync(dirname(dbPath),{recursive:true});
@@ -92,7 +103,7 @@ export function createApp({dbPath='data/errand.sqlite',mode='demo',now=()=>Date.
   const limited=new Map();const limit=(key,max=30)=>{const timestamp=time();let value=limited.get(key);if(!value||timestamp-value.at>60000){value={at:timestamp,count:0};limited.set(key,value);}if(++value.count>max)fail(429,'Too many requests; try again shortly');if(limited.size>5000)limited.clear();};
   const route=(method,path,fn)=>app[method](path,(req,res,next)=>{try{state=read();res.json(fn(req,res));}catch(e){next(e);}});
   const mutation=(path,fn)=>route('post',path,(req,res)=>atomic(()=>fn(req,res,authenticate(req))));
-  route('get','/api/config',()=>({mode,network:{name:'Elysium Testnet',chainId:99801,rpcUrl:'https://testnet-rpc.elysium.kinetiq.xyz',explorerUrl:'https://testnet-explorer.elysium.kinetiq.xyz',currency:'HYPE'},feeBps:250,aiEnabled:false,xEnabled:false,contractAddress:process.env.ESCROW_ADDRESS&&isAddress(process.env.ESCROW_ADDRESS)?process.env.ESCROW_ADDRESS.toLowerCase():null}));
+  route('get','/api/config',()=>({mode,network:walletNetwork(elysium),feeBps:250,aiEnabled:false,xEnabled:false,contractAddress:process.env.ESCROW_ADDRESS&&isAddress(process.env.ESCROW_ADDRESS)?process.env.ESCROW_ADDRESS.toLowerCase():null}));
   route('post','/api/auth/demo',(req,res)=>atomic(()=>{if(mode!=='demo')fail(403,'Demo identities are disabled in chain mode');limit(`demo:${req.ip}`);const {role}=parse(z.object({role:z.enum(['poster','agent'])}),req.body);return session(res,role==='poster'?DEMO_POSTER:DEMO_AGENT,role);}));
   route('get','/api/auth/me',req=>{try{const a=authenticate(req);return {address:a.address,role:a.role};}catch{return {address:null};}});
   mutation('/api/auth/logout',(req,res,a)=>{delete state.sessions[a.tokenHash];res.clearCookie('errand_session',{path:'/'});return {ok:true};});

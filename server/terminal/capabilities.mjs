@@ -10,7 +10,7 @@ const on = (extra = {}) => ({ available: true, reason: null, ...extra });
 export const FEED_WINDOWS = ['5m', '1h', '24h'];      // windows we actually compute
 export const CANDLE_TIMEFRAMES = ['15s', '1m', '5m', '15m', '1h'];
 
-export function capabilities(config, { agoraOn = false, usd = null } = {}) {
+export function capabilities(config, { agoraOn = false, usd = null, montra = null } = {}) {
   const live = Boolean(config.live);
   const v3Trade = live && Boolean(config.tradeReady);
   const venues = [
@@ -55,6 +55,10 @@ export function capabilities(config, { agoraOn = false, usd = null } = {}) {
     quotes: v3Trade ? on({ venues: ['uniswap-v3'] }) : off(live ? 'Live trading is not configured.' : 'Simulated preview: quotes are simulated.', { simulated: !live }),
     paperTrading: live ? off('Paper trading is only offered on the simulated preview.') : on(),
     router: config.routerReady ? on() : off(live ? 'Fee router contracts are not configured.' : 'Simulated preview: router setup is illustrative.'),
+    montraLaunch: !live ? off('Simulated preview: launching needs a live Elysium connection.')
+      : !config.routerReady ? off('Fee router contracts are not configured.')
+      : !montra?.ready ? off('Launch on Montra is not configured on this server yet.')
+      : on({ builderCode: montra.builderCode, switchExisting: true, paths: { options: '/api/montra/options', launch: '/api/montra/launch/plan', switch: '/api/montra/switch/plan' } }),
     alerts: on({ delivery: ['in-app'] }),
     walletTracking: on({ via: 'alerts', note: 'Watch a wallet with an alert of kind "wallet": you are notified when it buys or sells an indexed launch. No balances or P&L view yet.' }),
     portfolio: off('Not built yet. Use your wallet or the explorer for balances.'),

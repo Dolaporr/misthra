@@ -151,3 +151,60 @@ Configured in `chain/partners.json` (`id`, `name`, `url`, `origins`, `returnHost
 
 ### Existing (Agents section, unchanged)
 Missions, agents, inbox, account: see `docs/api-contract.md`.
+
+## Launch on Montra
+
+Launch a coin on Montra (or move an existing Montra coin) with its creator fees going into a
+Misthra fee router. Montra's hook holds creator fees until the recipient claims them, so the
+recipient is a small **Misthra Montra adapter** (one per router, at an address known in
+advance) that anyone can poke to claim the fees and forward them to the router.
+
+Available when `capabilities.montraLaunch.available` is true. Every step is an unsigned
+transaction the creator signs in their own wallet, in order; Misthra signs nothing.
+
+### `GET /api/montra/options`
+
+```json
+{ "launchEnabled": true, "launchFee": "10000000000000000", "builderCode": "misthra",
+  "configs": [{ "id": 0, "quote": "0x0000…", "native": true, "baseSupply": "1000000000000000000000000000",
+                "totalFeePct": 1, "protocolFeePct": 0.4, "lpFeePct": 0.2, "earlyBuyFeeStartPct": 0, "earlyBuyFeeWindowS": 0 }] }
+```
+Only enabled configs are listed. `launchFee` is in wei. Show the fee split to the creator.
+
+### `POST /api/montra/launch/plan`
+
+Body: `creator` (defaults to the signed-in wallet), `name`, `symbol`, `configId`, `buckets`
+(same as `/api/router/plan`), optional `description`, `logo`, `metadataURI`,
+`socials {telegram,twitter,discord,website,extra}`, `firstBuy` (HYPE, as a decimal string;
+HYPE-quoted configs only), `routerSalt`, `launchSalt` (send back the returned ones to
+re-plan the same addresses).
+
+Returns `router`, `adapter`, `token` (all predicted), `buckets`, `launchFee`, `firstBuy`,
+`routerSalt`, `launchSalt` and `steps`:
+
+| id | what | who signs |
+|---|---|---|
+| `router` | deploy the fee router (it names the adapter) | creator |
+| `launch` | Montra `launch`, fees 100% to the adapter, `value` = launch fee + first buy, builder code appended | creator |
+| `activate` | create the adapter and bind the router to the coin | anyone (send from the creator for simplicity) |
+
+Each step has `tx {from,to,data,value,chainId}`; send them one after another, waiting for each
+receipt. If `launch` fails, nothing is lost: the router simply stays unbound. Don't re-plan
+between steps (it would pick new salts); keep the plan in memory until all three confirm.
+
+### `POST /api/montra/switch/plan`
+
+For a coin already on Montra whose fees go to one wallet the creator controls. Body:
+`creator`, `token`, `buckets`, optional `routerSalt`. Steps: `router`, `recipient`
+(`hook.updateRecipient(poolId, adapter)`, signed by the wallet receiving fees today; tell the
+creator to claim what's already owed first), `activate`. Errors: `not_montra` 404,
+`not_creator` 403, `wrong_hook` 409.
+
+Errors for both: `not_live`/`router_not_ready`/`montra_not_configured` 503, `montra_paused`
+and `config_unavailable` 409, validation 400.
+
+### Collecting fees afterwards
+
+Anyone may call `collectAndForward()` on the adapter (claims from Montra, sends to the router),
+then `sync(address(0))` on the router as usual. A "Collect Montra fees" button on the router
+page should send the first, then the router page's normal sync.

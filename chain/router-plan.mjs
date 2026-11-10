@@ -18,7 +18,8 @@ export const factoryAbi = [
   'function predictLaunchpadAddress(address creator, bytes32 userSalt) view returns (address)',
 ];
 
-export function buildRouterConfig(config, { creator, buckets, poolFee = 10000 }) {
+export function buildRouterConfig(config, body) {
+  const { creator, buckets, poolFee = 10000 } = body;
   if (!isAddress(creator)) fail('A valid creator wallet is required.');
   if (!Array.isArray(buckets) || !buckets.length || buckets.length > 8) fail('Choose between one and eight buckets.');
   const kinds = new Set();
@@ -54,9 +55,17 @@ export function buildRouterConfig(config, { creator, buckets, poolFee = 10000 })
     ? [{ asset: { kind: SUBJECT, token: ZeroAddress }, route: { adapter: config.routerSwapAdapter, routeData: coder.encode(['uint24'], [poolFee]) }, priceGuard: config.routerSharedGuard, maxAmountInPerCall: MAX_PER_CALL }]
     : [];
   return {
-    creator: getAddress(creator), protocolFeeRecipient: config.routerProtocolFeeRecipient, whype: config.whype, launchpadAdapter: ZeroAddress,
+    creator: getAddress(creator), protocolFeeRecipient: config.routerProtocolFeeRecipient, whype: config.whype, launchpadAdapter: adapterOf(body),
     normalizations, buckets: out,
   };
+}
+
+// Optional launchpad adapter (e.g. a Misthra Montra adapter) allowed to bind the token.
+function adapterOf(body) {
+  const a = body.launchpadAdapter;
+  if (a == null || a === '' || a === ZeroAddress) return ZeroAddress;
+  if (!isAddress(String(a).toLowerCase())) fail('launchpadAdapter must be an address.');
+  return getAddress(String(a).toLowerCase());
 }
 
 export async function planRouter(provider, config, body) {

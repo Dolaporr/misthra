@@ -70,7 +70,7 @@ export function compileRouter({ evmVersion = 'cancun', write = false, extraSourc
   if (write) {
     writeFileSync(path.join(routerDir, 'RouterTypes.sol'), sources[typesKey].content);
     mkdirSync(path.join(root, 'artifacts/router'), { recursive: true });
-    for (const name of ['MisthraFeeRouter', 'MisthraFeeRouterFactory', 'MisthraV3SwapAdapter', 'MisthraV3TwapPriceGuard', 'MisthraSharedV3TwapPriceGuard', 'MisthraTradeGateway'])
+    for (const name of ['MisthraFeeRouter', 'MisthraFeeRouterFactory', 'MisthraV3SwapAdapter', 'MisthraV3TwapPriceGuard', 'MisthraSharedV3TwapPriceGuard', 'MisthraTradeGateway', 'MisthraMontraAdapter', 'MisthraMontraAdapterFactory'])
       writeFileSync(path.join(root, `artifacts/router/${name}.json`), `${JSON.stringify(artifacts[name], null, 2)}\n`);
   }
   return { artifacts, codehash };

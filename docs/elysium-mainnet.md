@@ -46,3 +46,17 @@ Checked on-chain after deploy: code present on 99901; gateway `feeBps()` = 75, `
 | Fee recipient (treasury) | `0xC43eB4113BFb7267D54e1592743f24f53a774128` |
 
 Pad attribution of hooks was checked on 2026-11-09 against Agora's public token API (`launchpad` field) for one token per hook, and pool counts are from PoolManager `Initialize` logs over ~50,000 blocks. Uniswap v3 saw 1 new pool in the same window.
+
+## Montra adapter (Launch on Montra)
+
+Not deployed yet. On your PC, from the repo, with the same hidden-prompt key setup as before:
+
+```
+export ELYSIUM_MONTRA_FACTORY=0x38D3ef3A06D18fA3286Fb5dEAfe611be725fcD15
+node scripts/deploy-montra-adapter.mjs             # dry run: reads Montra and checks a real coin
+node scripts/deploy-montra-adapter.mjs --broadcast # deploys one contract
+```
+
+Then add the printed `MISTHRA_MONTRA_ADAPTER_FACTORY` and `ELYSIUM_MONTRA_HOOK` to Railway.
+Add `MONTRA_BUILDER_CODE=misthra` only after the code is registered at
+montramarkets.xyz/builders/join (until then launches carry no builder suffix).

@@ -4,6 +4,7 @@ import { isAddress } from 'ethers';
 import { z } from 'zod';
 import { liveQuote, simulatedQuote } from '../../chain/trade.mjs';
 import { planRouter } from '../../chain/router-plan.mjs';
+import { MontraPlanError, montraOptions, planMontraLaunch, planMontraSwitch } from '../../chain/montra-launch.mjs';
 import { PAD_SUPPORT, PAD_SUPPORT_CHECKED, usable } from './pad-support.mjs';
 import { capabilities } from './capabilities.mjs';
 import { safeReturnUrl } from './partners.mjs';
@@ -16,7 +17,7 @@ import { Interface, formatUnits } from 'ethers';
 
 const STAGES = ['new', 'stretch', 'migrated'];
 
-export function mountTerminal(app, { store, config, provider = null, auth, now = () => Date.now(), partners = [], usdRate = () => null, images = null }) {
+export function mountTerminal(app, { store, config, provider = null, auth, now = () => Date.now(), partners = [], usdRate = () => null, images = null, montra = null }) {
   const r = express.Router();
   const source = () => (config.live ? 'live' : 'simulated');
   const clients = new Map(); // response -> wallet address or null
@@ -182,7 +183,13 @@ export function mountTerminal(app, { store, config, provider = null, auth, now =
     try { return await prepareRouterAction(provider, config, req.params.address, { action: req.body?.action, from, params: req.body?.params ?? {} }); } catch (e) { return routerError(e); }
   }));
 
-  r.get('/capabilities', json(() => capabilities(config, { agoraOn, usd: usdRate() })));
+  // Launch on Montra with fees into a Misthra router (docs/terminal-api.md § Launch on Montra).
+  const montraError = (e) => { if (e instanceof MontraPlanError) fail(e.status, e.message, e.code); throw e; };
+  r.get('/montra/options', json(async () => { try { return await montraOptions(provider, config, montra); } catch (e) { return montraError(e); } }));
+  r.post('/montra/launch/plan', express.json(), json(async (req) => { try { return await planMontraLaunch(provider, config, montra, { ...req.body, creator: req.body?.creator ?? who(req) }); } catch (e) { return montraError(e); } }));
+  r.post('/montra/switch/plan', express.json(), json(async (req) => { try { return await planMontraSwitch(provider, config, montra, { ...req.body, creator: req.body?.creator ?? who(req) }); } catch (e) { return montraError(e); } }));
+
+  r.get('/capabilities', json(() => capabilities(config, { agoraOn, usd: usdRate(), montra })));
   if (images) r.get(IMAGE_ROUTE, imageRoute(images));
 
   r.get('/stream', (req, res) => {

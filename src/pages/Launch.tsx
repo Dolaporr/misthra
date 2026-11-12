@@ -12,6 +12,7 @@ import {createBuckets, destinationLabel, isAddress, routeIssues, toggleDestinati
 import {PadSupport, usePadSupport} from '../terminal/PadSupport';
 import '../terminal/router-preview.css';
 import '../terminal/router-workspace.css';
+import '../terminal/montra-launch.css';
 
 type Plan = {predictedAddress: string | null; salt: string | null; buckets: {label: string; bps: number}[]; deployTx: Tx | null; steps: string[]; reason: string | null;ref?:{id:string;name:string}|null;returnUrl?:string|null};
 const DESTINATIONS = [
@@ -31,6 +32,7 @@ export function Launch(){
   const {identity,config,notify,openWallet}=useApp();
   const [link]=useState(()=>readPartnerLink(window.location.hash));
   const partners=useResource<{partners:Partner[]}>('/partners');
+  const montraCap=useResource<{montraLaunch?:{available:boolean}}>('/capabilities').data?.montraLaunch;
   const partner=partners.data?.partners.find(p=>p.id===link.ref);
   const active=useRef(true);
   useEffect(()=>{active.current=true;window.scrollTo({top:0,behavior:'instant'});return()=>{active.current=false}},[]);
@@ -86,6 +88,7 @@ export function Launch(){
   return <div className="page-shell launch-page router-workspace">
     {partner&&<p className="notice router-partner-banner">Setting up for <a href={partner.url} target="_blank" rel="noopener noreferrer">{partner.name}<ArrowUpRight size={13}/></a></p>}
     {link.ref&&partners.error&&<p className="error-text">Partner details could not be loaded. <button onClick={partners.reload}>Try again</button></p>}
+    {montraCap?.available&&<div className="router-launch-montra"><p><strong>Launching on Montra?</strong> Launch from Misthra and your creator fees go straight to your router.</p><a className="button secondary" href="#/launch/montra">Launch on Montra <ArrowRight size={15}/></a></div>}
     <header className="router-workspace-heading"><div><h1>Give your fees<br/>a destination.</h1><p>Set the split for your Elysium launch.<br/>Keep control of where the creator fees go.</p><div className="router-hero-facts"><span>1% router protocol fee</span><span>Signed by your wallet</span></div></div><RouteDiagram/></header>
     <div className="router-workspace-toolbar"><nav className="router-step-nav" aria-label="Router setup steps">{STAGES.map((stage,index)=><button key={stage.label} disabled={locked} aria-current={step===index?'step':undefined} onClick={()=>move(index)}><span className={'router-step-number'+(!issues.some(issue=>issue.step===index)&&index<3?' complete':'')}>{!issues.some(issue=>issue.step===index)&&index<3?<Check size={13} aria-hidden="true"/>:String(index+1).padStart(2,'0')}</span>{stage.label}</button>)}</nav><a href="#/terminal" className="router-terminal-link">Explore launches <ArrowUpRight size={15}/></a></div>
     <div className="router-workspace-grid"><div className="router-editor">

@@ -11,7 +11,7 @@ export type ActiveRouter = BaseSnapshot & {
   money:{asset:string;balance:string|null;liability:string|null;unaccounted:string|null;protocolOwed:string|null;insolvent:boolean|null}[];
   wallets:{recipient:string;asset:string;owed:string|null}[];
   sinks:{bucket:number;allocation:number;destination:string;asset:string;owed:string|null}[];
-  actions:RouterAction[]; whype:string;
+  actions:RouterAction[]; whype:string; launchpadAdapter?:string|null;
 };
 export type RouterSnapshot = ActiveRouter | (BaseSnapshot & {status:'not_deployed'|'not_misthra_router'|'uninitialized'});
 export type PreparedRouterAction = {ok:boolean;action:string;tx:Tx|null;amount?:string|null;steps?:string[];preconditions?:{ok:boolean;detail:string}[];reason:string|null;note?:string;preparedAt?:{block:number;timestamp:number}|null};
